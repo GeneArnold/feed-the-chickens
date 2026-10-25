@@ -20,7 +20,7 @@ export class Chicken {
     this.goal = { x, y };
     this.goalAt = 0;
     this.speed = 30;
-    this.layAt = scene.time.now + Phaser.Math.Between(7000, 14000);
+    this.layAt = scene.time.now + Phaser.Math.Between(15000, 25000);
     this.squawkAt = 0;
 
     this.shadow = scene.add.ellipse(x, y, 40, 10, 0x000000, 0.18).setDepth(DEPTH.onGround);
@@ -102,8 +102,8 @@ export class Chicken {
   // Ready to lay? Only well-fed chickens do.
   readyToLay(now) {
     if (this.state !== "ok" || now < this.layAt) return false;
-    this.layAt = now + Phaser.Math.Between(9000, 16000);
-    return this.weight > 60;
+    this.layAt = now + Phaser.Math.Between(22000, 34000);
+    return this.weight > 70;
   }
 
   grabbedBy(wolf) {

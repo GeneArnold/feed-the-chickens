@@ -355,7 +355,7 @@ export const LEVELS = [
   },
   {
     id: "corn", name: "Corn Country", line: "day-corn",
-    tip: "Well-fed chickens lay eggs: tap them!\n5 eggs fill the basket: a heart back.",
+    tip: "Well-fed chickens lay eggs: tap them!\n8 eggs fill the basket: a heart back.",
     paint: paintCorn, spots: [[100, 470], [440, 450], [160, 600], [400, 590], [270, 680], [90, 790], [450, 800], [270, 880]],
     bin: { x: 470, y: 400 }, dens: [{ x: 80, y: 260 }, { x: 460, y: 260 }, { x: -60, y: 700 }, { x: 600, y: 680 }],
     mud: [], weather: "leaves",

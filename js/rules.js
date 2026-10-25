@@ -69,7 +69,7 @@ export function feedPoints(weight) {
 }
 
 // Every few eggs fill the basket, and a full basket gives back a heart.
-export const EGGS_PER_BASKET = 5;
+export const EGGS_PER_BASKET = 8;
 
 export const POINTS = {
   punch: 75,     // a wolf sent running

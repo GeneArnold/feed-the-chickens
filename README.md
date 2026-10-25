@@ -37,7 +37,7 @@ On localhost and plain http the offline cache is switched off, so edits show up 
   - tap the **wolf** and he runs over and punches him. If the wolf had a chicken in his mouth, he
     drops it: a RESCUE.
   - well-fed chickens lay **eggs**, rolled out to one side. Tap one (or walk over it) to pick it
-    up: 50 points, and every 5 eggs fill the basket (top right) for a heart back, or 500 points
+    up: 50 points, and every 8 eggs fill the basket (top right) for a heart back, or 500 points
     when your hearts are full.
 - A starved or stolen chicken costs a heart. You start with 3. Lose them all and it's game over.
 - At **sundown** each chicken still alive is worth 100. A day without losing any is a PERFECT DAY:
@@ -78,10 +78,10 @@ Same as Fruitcake:
 ## The family score board
 
 Online high scores go through the shared **Shed service** at `https://api.thefunshed.com` (the
-`shed` repo). It's switched off until this game is added there: add a `chickens` line to
-`shed/api/apps.mjs` (counters `fed`, `punched`, `eggs`), deploy the shed, then set `scoresUrl` in
-`js/config.js` to `https://api.thefunshed.com/v1/chickens`. Until then the board is this phone's
-own top 10.
+`shed` repo), where this game is the `chickens` app (`scoresUrl` in `js/config.js`; set it to
+`null` to keep the board on the phone). A finished game posts its score and its `farm` counters
+(chickens fed, wolves punched, eggs found) in one request (`POST /v1/chickens/scores`). Games
+played with no signal wait on the phone and post the next time the game opens.
 
 ## Files
 

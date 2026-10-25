@@ -33,10 +33,17 @@ export function postGame(score, day, stats) {
   const player = store.get("player");
   const game = {
     board: store.BOARD, score, day, initials: player.initials, player: player.id, at: Date.now(),
-    counts: { fed: { all: stats.fed }, punched: { all: stats.punched }, eggs: { all: stats.eggs } },
+    counts: { farm: farmCounts(stats) },
   };
   store.set("outbox", [...store.get("outbox"), game].slice(-50));
   return flush();
+}
+
+// The Shed takes 1 to 100 of each counter per game; zeros are left out.
+function farmCounts(stats) {
+  const counts = {};
+  for (const name of ["fed", "punched", "eggs"]) if (stats[name] > 0) counts[name] = Math.min(100, stats[name]);
+  return counts;
 }
 
 let flushing = null;
