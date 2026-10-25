@@ -30,6 +30,7 @@ const FILES = [
   "js/scenes/BootScene.js",
   "js/scenes/DayScene.js",
   "js/scenes/NameScene.js",
+  "js/scenes/PauseScene.js",
   "js/scenes/PlayScene.js",
   "js/scenes/ResultsScene.js",
   "js/scenes/TitleScene.js",

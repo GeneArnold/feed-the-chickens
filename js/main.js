@@ -5,6 +5,7 @@ import { BoardScene } from "./scenes/BoardScene.js";
 import { BootScene } from "./scenes/BootScene.js";
 import { DayScene } from "./scenes/DayScene.js";
 import { NameScene } from "./scenes/NameScene.js";
+import { PauseScene } from "./scenes/PauseScene.js";
 import { PlayScene } from "./scenes/PlayScene.js";
 import { ResultsScene } from "./scenes/ResultsScene.js";
 import { TitleScene } from "./scenes/TitleScene.js";
@@ -18,14 +19,16 @@ const game = new Phaser.Game({
   backgroundColor: "#2c5a22",
   banner: false,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: W * ZOOM, height: H * ZOOM },
-  scene: [BootScene, NameScene, TitleScene, DayScene, PlayScene, ResultsScene, BoardScene],
+  scene: [BootScene, NameScene, TitleScene, DayScene, PlayScene, PauseScene, ResultsScene, BoardScene],
 });
 
-// Android's back gesture returns to the title screen instead of closing the app.
+// Android's back gesture pauses a game, and on other screens returns to the title, instead of
+// closing the app.
 history.pushState({ game: true }, "");
 window.addEventListener("popstate", () => {
   const active = game.scene.getScenes(true)[0];
-  if (active && !["Boot", "Title"].includes(active.scene.key)) active.scene.start("Title");
+  if (active?.scene.key === "Play") active.pause();
+  else if (active && !["Boot", "Title", "Pause"].includes(active.scene.key)) active.scene.start("Title");
   history.pushState({ game: true }, "");
 });
 

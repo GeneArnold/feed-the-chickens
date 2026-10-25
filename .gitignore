@@ -1,2 +1,7 @@
 sayings/.raw.wav
 .DS_Store
+
+# family photos stay on this computer
+*.jpg
+*.jpeg
+art/source/

@@ -9,13 +9,14 @@ import { Farmer } from "../farmer.js";
 import { LEVELS, paintLevel } from "../levels.js";
 import { CLOSE_CALL, EGGS_PER_BASKET, MAX_HEARTS, POINTS, START_HEARTS, dayRules, drainAt, feedPoints, sceneryIndex, sundown } from "../rules.js";
 import { Wolf } from "../wolf.js";
-import { DEPTH, H, W, bubble, fingerAt, floatText, setupCamera, text } from "../ui.js";
+import { DEPTH, H, W, bubble, fingerAt, floatText, inside, setupCamera, text } from "../ui.js";
 
 const NAMES = ["Henrietta", "Gertrude", "Nugget", "Dolly", "Peep", "Clucky", "Betty", "Drumstick", "Mabel", "Omelette", "Goldie", "Pecky", "Daisy", "Ruby", "Biscuit", "Pearl"];
 const EGG_MS = 10000;          // an egg left lying around this long is gone
 const EGG_PICKUP = 46;         // Uncle Bob picks up an egg he walks this close to
 const FULL = 85;               // a chicken this well fed doesn't want more (no scoop wasted)
 const DRAG = 18;               // a finger moving this far is steering Uncle Bob, not tapping
+const PAUSE = { x: 0, y: 0, w: 60, h: 64 }; // the II button, top left of the score bar
 const DEBUG = new URLSearchParams(location.search).has("debug");
 
 export class PlayScene extends Phaser.Scene {
@@ -68,6 +69,10 @@ export class PlayScene extends Phaser.Scene {
     // A tap feeds, punches or refills. Dragging a finger just walks Uncle Bob along under it.
     this.input.on("pointerdown", (p) => {
       audio.unlock();
+      if (inside(fingerAt(this, p).x, fingerAt(this, p).y, PAUSE)) {
+        this.touch = { id: p.id, start: fingerAt(this, p), dragging: false };
+        return;
+      }
       this.touch = { id: p.id, start: fingerAt(this, p), dragging: false };
     });
     this.input.on("pointermove", (p) => {
@@ -82,7 +87,9 @@ export class PlayScene extends Phaser.Scene {
       const t = this.touch;
       if (!t || t.id !== p.id) return;
       this.touch = null;
-      if (!t.dragging) this.tap(t.start);
+      if (t.dragging) return;
+      if (inside(t.start.x, t.start.y, PAUSE)) this.pause();
+      else this.tap(t.start);
     };
     this.input.on("pointerup", up);
     this.input.on("pointerupoutside", up);
@@ -395,6 +402,23 @@ export class PlayScene extends Phaser.Scene {
     });
   }
 
+  // The II button (or the phone's back gesture): stop everything and ask whether to go on or quit.
+  pause() {
+    if (this.phase !== "play") return;
+    this.touch = null;
+    audio.play("pop");
+    this.scene.pause();
+    this.scene.launch("Pause");
+  }
+
+  // Quitting from the pause screen ends the game here, score saved, straight to the results.
+  quit() {
+    this.phase = "gameover";
+    const { rank, previousTop } = store.recordGame(this.score, this.day, this.stats);
+    const challenge = store.get("challenge");
+    this.scene.start("Results", { score: this.score, day: this.day, stats: this.stats, rank, previousTop, challenge });
+  }
+
   showGameOver(rank, previousTop, challenge) {
     this.panel("GAME OVER", `You made it to day ${this.day}`, [
       [`Chickens fed: ${this.stats.fed}`, "#ffffff"],
@@ -476,8 +500,10 @@ export class PlayScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(d);
     g.fillStyle(0x3b2a1e, 0.88).fillRect(0, 0, W, 96);
     g.fillStyle(0x2b1d14).fillRect(0, 94, W, 4);
-    text(this, 20, 18, "SCORE", 13, { originX: 0, color: "#e8c98f", strokeThickness: 0 }).setDepth(d);
-    this.scoreText = text(this, 20, 46, "0", 32, { originX: 0, color: "#ffe066" }).setDepth(d);
+    g.fillStyle(0x2b1d14).fillRoundedRect(10, 12, 38, 38, 10);
+    g.fillStyle(0xfff3c4).fillRect(21, 21, 6, 20).fillRect(31, 21, 6, 20);
+    text(this, 60, 18, "SCORE", 13, { originX: 0, color: "#e8c98f", strokeThickness: 0 }).setDepth(d);
+    this.scoreText = text(this, 60, 46, "0", 32, { originX: 0, color: "#ffe066" }).setDepth(d);
     text(this, W / 2, 26, `DAY ${this.day}`, 28, { color: "#ffffff" }).setDepth(d);
     text(this, W / 2, 50, this.level.name, 13, { color: "#e8c98f", strokeThickness: 0 }).setDepth(d);
     // the sun crossing the sky: how long until sundown
