@@ -1,0 +1,62 @@
+{
+  "_note": "Uncle Bob's lines. \"id\" names the recorded clip, sayings/voices/<id>.mp3, made by tools/make-voices.mjs, which also sets \"voiced\". \"day\" lines open each scenery (js/levels.js names its line). \"trash\" lines are for sharing a score, never spoken; {score} and {day} are filled in.",
+  "day": [
+    { "id": "lets-go-feed", "text": "Hey, let's go feed those chickens!", "voiced": true },
+    { "id": "day-barn", "text": "Watch out for that wolf. If he shows up, give him a good punch!", "voiced": true },
+    { "id": "day-corn", "text": "Corn's high this year. Keep your eyes peeled for that wolf.", "voiced": true },
+    { "id": "day-mud", "text": "Rained all night. Mud's deep, so watch your step!", "voiced": true },
+    { "id": "day-night", "text": "It's dark out here. Wolves love the dark.", "voiced": true },
+    { "id": "day-snow", "text": "Brr! Cold chickens get hungry fast!", "voiced": true },
+    { "id": "day-again", "text": "Back at it! These chickens are hungrier than ever.", "voiced": true }
+  ],
+  "feed": [
+    { "id": "here-you-go-girls", "text": "Here you go, girls!", "voiced": true },
+    { "id": "chow-time", "text": "Chow time!", "voiced": true },
+    { "id": "eat-up", "text": "Eat up!", "voiced": true },
+    { "id": "fresh-corn", "text": "Fresh corn!", "voiced": true },
+    { "id": "plenty-for-everybody", "text": "There's plenty for everybody.", "voiced": true },
+    { "id": "who-s-a-good-chicken", "text": "Who's a good chicken?", "voiced": true }
+  ],
+  "close": [
+    { "id": "that-was-close", "text": "Whew! That was close!", "voiced": true },
+    { "id": "just-in-time", "text": "Just in time!", "voiced": true }
+  ],
+  "punch": [
+    { "id": "get-outta-here", "text": "Get outta here, wolf!", "voiced": true },
+    { "id": "not-my-chickens", "text": "Not my chickens!", "voiced": true },
+    { "id": "mangy-mutt", "text": "Take that, you mangy mutt!", "voiced": true },
+    { "id": "and-stay-out", "text": "And stay out!", "voiced": true },
+    { "id": "right-in-the-snout", "text": "Pow! Right in the snout!", "voiced": true }
+  ],
+  "wolf": [
+    { "id": "here-comes-the-wolf", "text": "Here comes that wolf!", "voiced": true },
+    { "id": "wolf", "text": "Wolf! Wolf!", "voiced": true }
+  ],
+  "empty": [
+    { "id": "bucket-s-empty", "text": "Bucket's empty! Back to the feed bin.", "voiced": true }
+  ],
+  "egg": [
+    { "id": "ooh-an-egg", "text": "Ooh, an egg!", "voiced": true },
+    { "id": "breakfast", "text": "Breakfast!", "voiced": true }
+  ],
+  "lost": [
+    { "id": "aw-shucks", "text": "Aw, shucks. We lost one.", "voiced": true },
+    { "id": "poor-little-thing", "text": "Poor little thing.", "voiced": true }
+  ],
+  "stolen": [
+    { "id": "come-back-here", "text": "Hey! Come back with my chicken!", "voiced": true },
+    { "id": "that-wolf-got-one", "text": "That wolf got one!", "voiced": true }
+  ],
+  "sundown": [
+    { "id": "good-work", "text": "Good work! Sun's going down.", "voiced": true },
+    { "id": "fed-and-happy", "text": "Every one of 'em fed and happy.", "voiced": true }
+  ],
+  "gameover": [
+    { "id": "that-s-all-folks", "text": "Well, that's all for today.", "voiced": true }
+  ],
+  "trash": [
+    { "text": "I kept Uncle Bob's chickens alive till day {day} for {score} points. Your chickens would starve." },
+    { "text": "{score} points on Feed the Chickens. The wolf is scared of ME now." },
+    { "text": "Made it to day {day} with {score} points. Bet you can't even find the feed bin." }
+  ]
+}
