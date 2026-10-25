@@ -98,7 +98,8 @@ played with no signal wait on the phone and post the next time the game opens.
 | `sayings/sayings.json` | Uncle Bob's lines, by when he says them; `trash` lines are for texting a score |
 | `sayings/voices/` | Uncle Bob's recorded lines, one mp3 per line |
 | `js/sayings.js` | Picks a line and finds its recording |
-| `js/textures.js` | Placeholder art drawn in code: Uncle Bob, chickens, the wolf, skull, eggs, corn |
+| `js/textures.js` | Art drawn in code: Uncle Bob's body (with his cartoon face), chickens, the wolf, skull, eggs, corn |
+| `img/bob-head.png` | Uncle Bob's cartoon face |
 | `js/audio.js` | Placeholder sound effects (clucks, howls, punches), and the voice clips |
 | `js/storage.js` | What the phone remembers: initials, its top 10, totals, unsent games |
 | `js/online.js` | Talks to the Shed service; queues games while offline |
@@ -118,7 +119,11 @@ played with no signal wait on the phone and post the next time the game opens.
   For the artist's art, replace `paint` with one that places the picture.
 - **Real art:** load the artist's pictures in `BootScene` under the same names (`bob`,
   `bob-punch`, `bob-big`, `chicken`, `wolf`, `wolf-dizzy`, `skull`, …) and delete the drawing in
-  `js/textures.js`. Uncle Bob stays a cartoon: no photos.
+  `js/textures.js`.
+- **Uncle Bob's face:** `img/bob-head.png`, a cartoon made from a family photo with SwarmUI on
+  cerebro (Flux, image-to-image), cut out and put on the drawn body (`makeBob` in
+  `js/textures.js`). The photo and the working files stay on Gene's computer in `art/source/`,
+  which git ignores: only the cartoon is ever published.
 - **A line for Uncle Bob:** add it to `sayings/sayings.json` with a short `id`, then
   `node tools/make-voices.mjs` records just the new lines. Chatterbox runs on cerebro
   (http://192.168.40.110:8004). His voice is set at the top of that script (now Jeremiah, slowed

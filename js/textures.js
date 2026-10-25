@@ -14,7 +14,7 @@ function draw(scene, key, w, h, paint) {
 // feed bucket in his left hand. Facing us; `punch` throws his right arm out to the side.
 // He stands in the middle, feet at (48, 102), so he can turn round without jumping sideways.
 export const BOB_SIZE = { w: 96, h: 104, footX: 48 };
-function paintBob(g, s, punch) {
+function paintBob(g, s, punch, head = true) {
   const p = (v) => v * s;
   g.translateCanvas(p(12), 0); // drawn below with his feet at x 36
   // boots
@@ -61,6 +61,7 @@ function paintBob(g, s, punch) {
   g.fillStyle(0xf2c94c);
   g.fillCircle(p(27), p(51), p(1.6));
   g.fillCircle(p(45), p(51), p(1.6));
+  if (!head) return; // his cartoon face goes on instead (makeBob)
   // head, ears
   g.fillStyle(0xf1c27d);
   g.fillCircle(p(23.5), p(30), p(3.5));
@@ -194,10 +195,33 @@ function heart(g, cx, cy, r, colour) {
   g.fillTriangle(cx - r * 1.03, cy, cx + r * 1.03, cy, cx, cy + r);
 }
 
+// Uncle Bob with his own cartoon face (img/bob-head.png, made from a family photo) on the drawn
+// body. Without that picture he keeps the drawn face and straw hat.
+// `s` is the scale; the small walking Bob is made at 2x and shown at half size, so he stays sharp.
+export const BOB_RES = 2;
+const HEAD = { w: 42, chinY: 50 }; // the face picture's width, and where his chin sits, in grid units
+
+function makeBob(scene, key, s, punch) {
+  if (scene.textures.exists(key)) return;
+  const w = BOB_SIZE.w * s;
+  const h = BOB_SIZE.h * s;
+  if (!scene.textures.exists("bob-head")) return draw(scene, key, w, h, (g) => paintBob(g, s, punch));
+  const g = scene.make.graphics({}, false);
+  paintBob(g, s, punch, false);
+  const face = scene.make.image({ key: "bob-head", add: false });
+  const fw = HEAD.w * s;
+  const fh = fw * (face.height / face.width);
+  face.setOrigin(0.5, 1).setDisplaySize(fw, fh).setPosition(BOB_SIZE.footX * s, HEAD.chinY * s);
+  const tex = scene.textures.addDynamicTexture(key, w, h);
+  tex.draw(g).draw(face);
+  g.destroy();
+  face.destroy();
+}
+
 export function makeTextures(scene) {
-  draw(scene, "bob", BOB_SIZE.w, BOB_SIZE.h, (g) => paintBob(g, 1, false));
-  draw(scene, "bob-punch", BOB_SIZE.w, BOB_SIZE.h, (g) => paintBob(g, 1, true));
-  draw(scene, "bob-big", BOB_SIZE.w * 3, BOB_SIZE.h * 3, (g) => paintBob(g, 3, false));
+  makeBob(scene, "bob", BOB_RES, false);
+  makeBob(scene, "bob-punch", BOB_RES, true);
+  makeBob(scene, "bob-big", 3, false);
   draw(scene, "chicken", 64, 60, paintChicken);
   draw(scene, "wolf", 112, 72, (g) => paintWolf(g, false));
   draw(scene, "wolf-dizzy", 112, 72, (g) => paintWolf(g, true));

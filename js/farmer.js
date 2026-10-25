@@ -1,6 +1,6 @@
 // Uncle Bob, as you steer him round the farm: walks to wherever you tap, carries the feed bucket,
 // and throws a punch when he reaches a wolf.
-import { BOB_SIZE } from "./textures.js";
+import { BOB_RES, BOB_SIZE } from "./textures.js";
 import { DEPTH, W } from "./ui.js";
 
 export const SPEED = 250; // pixels per second on dry grass
@@ -19,7 +19,7 @@ export class Farmer {
     this.walked = 0;
     this.busyUntil = 0;
     this.shadow = scene.add.ellipse(x, y, 46, 12, 0x000000, 0.22).setDepth(DEPTH.onGround);
-    this.sprite = scene.add.image(x, y, "bob").setOrigin(BOB_SIZE.footX / BOB_SIZE.w, 0.98);
+    this.sprite = scene.add.image(x, y, "bob").setOrigin(BOB_SIZE.footX / BOB_SIZE.w, 0.98).setScale(1 / BOB_RES);
   }
 
   goTo(goal) {

@@ -7,7 +7,7 @@ frontend:
     build:
       commands:
         - mkdir -p dist
-        - cp -r index.html style.css manifest.webmanifest sw.js vendor js sayings icons dist/
+        - cp -r index.html style.css manifest.webmanifest sw.js vendor js sayings icons img dist/
         - rm -rf dist/sayings/voice-samples
         - sed -i "s/chickens-dev/chickens-$(echo "$AWS_COMMIT_ID" | cut -c1-12)/" dist/sw.js
         - grep -q 'chickens-dev' dist/sw.js && echo "sw.js VERSION was not stamped" && exit 1 || true

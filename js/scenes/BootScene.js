@@ -1,4 +1,4 @@
-// Loads Uncle Bob's lines, draws the placeholder art, then opens the game.
+// Loads Uncle Bob's lines and his cartoon face, draws the rest of the art, then opens the game.
 import * as online from "../online.js";
 import * as sayings from "../sayings.js";
 import * as store from "../storage.js";
@@ -15,6 +15,7 @@ export class BootScene extends Phaser.Scene {
     setupCamera(this);
     const status = text(this, W / 2, H / 2, "Filling the feed bucket...", 28);
     this.load.json("sayings", "sayings/sayings.json");
+    this.load.image("bob-head", "img/bob-head.png"); // Uncle Bob's cartoon face
     this.load.on("progress", (v) => status.setText(`Filling the feed bucket... ${Math.round(v * 100)}%`));
     this.load.on("loaderror", (file) => console.warn("Could not load", file.src));
   }

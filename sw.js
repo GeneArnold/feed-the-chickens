@@ -35,6 +35,7 @@ const FILES = [
   "js/scenes/ResultsScene.js",
   "js/scenes/TitleScene.js",
   "sayings/sayings.json",
+  "img/bob-head.png",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
