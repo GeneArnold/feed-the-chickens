@@ -40,7 +40,7 @@ On localhost and plain http the offline cache is switched off, so edits show up 
     up: 50 points, and every 8 eggs fill the basket (top right) for a heart back, or 500 points
     when your hearts are full.
 - **II** (top left) pauses: KEEP PLAYING, or QUIT, which ends the game with the score saved. The
-  phone's back gesture pauses too.
+  phone's back gesture pauses too, and so does switching to another app.
 - A starved or stolen chicken costs a heart. You start with 3. Lose them all and it's game over.
 - At **sundown** each chicken still alive is worth 100. A day without losing any is a PERFECT DAY:
   250 more and a heart back (up to 5).
@@ -72,7 +72,12 @@ Same as Fruitcake:
 - A private GitHub repo, `GeneArnold/feed-the-chickens`. **Every push to `main` is a release.**
 - Its own Amplify Hosting app in the **Entertainment** AWS account (us-east-2), connected to the
   repo in the Amplify console. `amplify.yml` copies the game's files and stamps the commit into
-  `sw.js`, so installed phones pick up the new version on their next visit.
+  `sw.js`, and writes the commit and release time into `js/version.js` and `version.json`.
+- Installed phones: the bottom of the title screen shows the version (the release's date and time).
+  The game asks the site for `version.json` when the title screen opens and whenever the game comes
+  back to the front; if a newer release is out, an orange **NEW VERSION! TAP TO UPDATE** button
+  appears, which throws away the stored copy and reloads. Tapping the version checks on demand.
+  A copy installed before this button existed needs one uninstall and reinstall.
 - At **https://chickens.thefunshed.com**:
   `aws amplify create-domain-association --profile entertainment --region us-east-2 --app-id <id> --domain-name thefunshed.com --sub-domain-settings prefix=chickens,branchName=main`
 - Then the card on the Fun Shed home page (`shed/site/index.html`) flips to "Play now".
@@ -104,6 +109,7 @@ played with no signal wait on the phone and post the next time the game opens.
 | `js/storage.js` | What the phone remembers: initials, its top 10, totals, unsent games |
 | `js/online.js` | Talks to the Shed service; queues games while offline |
 | `js/share.js` | Trash talk: the share sheet (or a text message), the score picture, dare links |
+| `js/update.js`, `js/version.js` | The version on the title screen, the check for a newer release, the update button |
 | `js/install.js` | The title screen's "install me" hint, for phones playing in a browser tab |
 | `js/config.js` | Where the game lives (for dare links) and the Shed service's address |
 | `sw.js`, `manifest.webmanifest` | Offline play and installing as an app |

@@ -25,6 +25,8 @@ const FILES = [
   "js/storage.js",
   "js/textures.js",
   "js/ui.js",
+  "js/update.js",
+  "js/version.js",
   "js/wolf.js",
   "js/scenes/BoardScene.js",
   "js/scenes/BootScene.js",
@@ -71,7 +73,9 @@ self.addEventListener("activate", (event) => {
 // Cache first: the stored copy answers at once, online or not.
 self.addEventListener("fetch", (event) => {
   // Only the game's own files; the family score service must always be asked fresh.
-  if (event.request.method !== "GET" || new URL(event.request.url).origin !== location.origin) return;
+  // version.json, which says whether a newer release is out, is never answered from the stored copy.
+  const url = new URL(event.request.url);
+  if (event.request.method !== "GET" || url.origin !== location.origin || url.pathname.endsWith("/version.json")) return;
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then((hit) => hit || fetch(event.request)),
   );

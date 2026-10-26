@@ -93,6 +93,10 @@ export class PlayScene extends Phaser.Scene {
     };
     this.input.on("pointerup", up);
     this.input.on("pointerupoutside", up);
+    // Switching to another app (a call, a text) pauses the day, so no chicken starves meanwhile.
+    const away = () => document.hidden && this.pause();
+    document.addEventListener("visibilitychange", away);
+    this.events.once("shutdown", () => document.removeEventListener("visibilitychange", away));
     audio.play("rooster");
     const go = text(this, W / 2, H / 2, "GO!", 90, { color: "#ffe066" }).setDepth(DEPTH.overlay);
     this.tweens.add({ targets: go, scale: 1.5, alpha: 0, duration: 800, delay: 300, onComplete: () => go.destroy() });
