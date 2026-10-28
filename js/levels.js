@@ -8,7 +8,15 @@
 //   spots   where chickens peck (8 each; a day with fewer chickens uses the first ones)
 //   bin     the feed bin, where Uncle Bob refills his bucket
 //   dens    where wolves come in from and run back to (just off the screen edge)
-//   mud     ellipses { x, y, rx, ry } that slow Uncle Bob to half speed
+//   mud     ellipses { x, y, rx, ry } that slow Uncle Bob to half speed. The sizes are kept, but
+//           every day on this scenery puts them somewhere new (scatterPuddles)
+//   water   rain puddles { x, y, rx, ry }, just for looks; scattered the same way
+//   patch   the picture for the mud: "mud" (img/mud-1.png, mud-2.png) or "pumpkins" (pumpkin vines)
+//   chicks  how many chicks trot after each hen, just for looks
+//   prize   one hen a day is the prize hen, worth double to feed
+//
+// Each scenery's background is a painted picture, img/bg-<id>.jpg (made with tools/swarm.py), with
+// the puddles laid on top. The `paint` drawings are the stand-ins if a picture is missing.
 //   weather "rain", "snow", "leaves", "fireflies" or none
 //   dark    night: Uncle Bob carries a lantern and the rest of the farm is dark
 //   line    id of Uncle Bob's line that opens the day (sayings/sayings.json)
@@ -365,14 +373,15 @@ export const LEVELS = [
     tip: "Mud slows you down: walk around it.\nAnd now the wolves come in pairs!",
     paint: paintMud, spots: [[90, 430], [440, 460], [270, 450], [110, 640], [430, 660], [270, 820], [100, 880], [440, 880]],
     bin: { x: 270, y: 360 }, dens: [{ x: -60, y: 560 }, { x: 600, y: 560 }, { x: 600, y: 900 }],
-    mud: [{ x: 270, y: 610, rx: 110, ry: 50 }, { x: 110, y: 760, rx: 70, ry: 32 }, { x: 420, y: 770, rx: 80, ry: 36 }, { x: 330, y: 470, rx: 40, ry: 20 }],
+    mud: [{ x: 270, y: 610, rx: 78, ry: 34 }, { x: 110, y: 760, rx: 58, ry: 26 }, { x: 420, y: 770, rx: 62, ry: 28 }, { x: 330, y: 470, rx: 40, ry: 18 }],
+    water: [{ x: 440, y: 560, rx: 44, ry: 16 }, { x: 170, y: 530, rx: 34, ry: 13 }, { x: 290, y: 920, rx: 40, ry: 14 }],
     weather: "rain",
   },
   {
     id: "night", name: "Harvest Moon", line: "day-night",
     tip: "It's dark! Your lantern lights the way.\nWatch for glowing eyes.",
-    paint: paintNight, spots: SPOTS,
-    bin: { x: 120, y: 360 }, dens: [{ x: -60, y: 460 }, { x: 600, y: 470 }, { x: -60, y: 860 }, { x: 600, y: 860 }],
+    paint: paintNight, spots: [[110, 440], [430, 440], [270, 580], [96, 670], [444, 680], [270, 780], [130, 870], [420, 870]],
+    bin: { x: 283, y: 462 }, dens: [{ x: -60, y: 460 }, { x: 600, y: 470 }, { x: -60, y: 860 }, { x: 600, y: 860 }],
     mud: [], weather: "fireflies", dark: true,
   },
   {
@@ -382,8 +391,60 @@ export const LEVELS = [
     bin: { x: 270, y: 370 }, dens: [{ x: -60, y: 500 }, { x: 600, y: 520 }, { x: -60, y: 800 }, { x: 600, y: 780 }],
     mud: [], weather: "snow", speed: 0.85,
   },
+  {
+    id: "chicks", name: "Spring Chicks", line: "day-chicks",
+    tip: "Spring! Every hen has chicks.\nFeed the mamas, the chicks tag along.",
+    paint: paintBarnyard, spots: [[110, 450], [430, 450], [270, 560], [110, 680], [430, 680], [270, 790], [120, 890], [420, 890]],
+    bin: { x: 270, y: 420 }, dens: [{ x: -60, y: 560 }, { x: 600, y: 600 }, { x: -60, y: 860 }, { x: 600, y: 860 }],
+    mud: [], weather: "petals", chicks: 2,
+  },
+  {
+    id: "pumpkin", name: "Pumpkin Patch", line: "day-pumpkin",
+    tip: "Pumpkin vines slow you down.\nWalk around them!",
+    paint: paintCorn, spots: [[100, 450], [440, 450], [270, 560], [110, 650], [430, 650], [270, 760], [100, 880], [440, 880]],
+    bin: { x: 270, y: 380 }, dens: [{ x: -60, y: 520 }, { x: 600, y: 540 }, { x: -60, y: 820 }, { x: 600, y: 800 }],
+    mud: [{ rx: 70, ry: 32 }, { rx: 60, ry: 28 }, { rx: 64, ry: 30 }, { rx: 46, ry: 22 }], patch: "pumpkins", weather: "leaves",
+  },
+  {
+    id: "fair", name: "County Fair", line: "day-fair",
+    tip: "One hen wears a blue ribbon.\nShe's worth double: keep her fed!",
+    paint: paintBigBarn, spots: [[110, 450], [430, 450], [270, 570], [100, 660], [440, 660], [270, 770], [120, 880], [420, 880]],
+    bin: { x: 270, y: 400 }, dens: [{ x: -60, y: 500 }, { x: 600, y: 500 }, { x: -60, y: 840 }, { x: 600, y: 840 }],
+    mud: [], weather: "confetti", prize: true,
+  },
 ];
 
+// The scenery for one day, with its puddles dropped in new places: on the farm, clear of where the
+// chickens live, the feed bin, and each other. A puddle with no room left is left out.
+export function scatterPuddles(level) {
+  const placed = [];
+  const clear = (x, y, rx, ry) =>
+    level.spots.every(([sx, sy]) => ((x - sx) / (rx + 50)) ** 2 + ((y - sy) / (ry + 40)) ** 2 >= 1) &&
+    ((x - level.bin.x) / (rx + 70)) ** 2 + ((y - level.bin.y) / (ry + 60)) ** 2 >= 1 &&
+    placed.every((p) => ((x - p.x) / (rx + p.rx + 20)) ** 2 + ((y - p.y) / (ry + p.ry + 16)) ** 2 >= 1);
+  const drop = (list = []) => list.flatMap(({ rx, ry }) => {
+    for (let tries = 0; tries < 300; tries++) {
+      const x = Phaser.Math.Between(rx + 10, W - rx - 10);
+      const y = Phaser.Math.Between(440 + ry, 885 - ry); // above the fence along the bottom
+      if (clear(x, y, rx, ry)) {
+        placed.push({ x, y, rx, ry });
+        return [{ x, y, rx, ry }];
+      }
+    }
+    return [];
+  });
+  const mud = drop(level.mud);
+  return { ...level, mud, water: drop(level.water) };
+}
+
 export function paintLevel(scene, level) {
-  return level.paint(scene, level);
+  const key = `bg-${level.id}`;
+  if (!scene.textures.exists(key)) return level.paint(scene, level);
+  const back = layer(scene);
+  const img = scene.add.image(W / 2, 0, key).setOrigin(0.5, 0);
+  back.add(img.setScale(Math.max(W / img.width, H / img.height)));
+  // Each puddle picture is exactly its ellipse, so the mud you see is the mud that slows you.
+  (level.water || []).forEach((m) => back.add(scene.add.image(m.x, m.y, "water").setDisplaySize(m.rx * 2, m.ry * 2)));
+  level.mud.forEach((m, i) => back.add(scene.add.image(m.x, m.y, `${level.patch ?? "mud"}-${(i % 2) + 1}`).setDisplaySize(m.rx * 2, m.ry * 2)));
+  return { back };
 }

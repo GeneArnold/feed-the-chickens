@@ -8,7 +8,7 @@
 export const START_HEARTS = 3;
 export const MAX_HEARTS = 5;
 
-// One row per day of the first trip round the farm.
+// One row per day of the first trip round the farm, one per scenery.
 //   chickens   how many to look after (each scenery has 8 spots)
 //   drain      weight lost per second (a fed chicken is 100; at 0 it dies)
 //   wolfEvery  [min, max] seconds between wolves; null means no wolf yet
@@ -25,14 +25,17 @@ export const DAYS = [
   { chickens: 5, drain: 4.0, wolfEvery: [10, 15], firstWolf: 7, maxWolves: 2, pack: 2, wolfSpeed: 66, bucket: 5, dayLength: 55 },
   { chickens: 6, drain: 4.2, wolfEvery: [10, 14], firstWolf: 6, maxWolves: 3, pack: 2, wolfSpeed: 70, bucket: 5, dayLength: 60 },
   { chickens: 7, drain: 4.4, wolfEvery: [9, 13], firstWolf: 6, maxWolves: 3, pack: 2, wolfSpeed: 74, bucket: 4, dayLength: 60 },
+  { chickens: 7, drain: 4.5, wolfEvery: [9, 13], firstWolf: 6, maxWolves: 3, pack: 2, wolfSpeed: 75, bucket: 4, dayLength: 60 },
+  { chickens: 8, drain: 4.5, wolfEvery: [9, 12], firstWolf: 6, maxWolves: 3, pack: 2, wolfSpeed: 76, bucket: 4, dayLength: 60 },
+  { chickens: 8, drain: 4.6, wolfEvery: [8, 12], firstWolf: 6, maxWolves: 3, pack: 2, wolfSpeed: 78, bucket: 4, dayLength: 60 },
 ];
 
 const MAX_CHICKENS = 8;
 const MAX_WOLVES = 5;
 const MAX_PACK = 3;
 
-// The rules for day 1, 2, 3, ... Past the last row, every extra day is about 8% hungrier and
-// wolfier, with another chicken and another wolf every other day, and bigger packs every third.
+// The rules for day 1, 2, 3, ... Past the last row, every extra day is about 4% hungrier and
+// wolfier, with another wolf every third day, and bigger packs every fourth.
 export function dayRules(day) {
   const i = Math.max(0, day - 1);
   const base = DAYS[Math.min(i, DAYS.length - 1)];
@@ -42,11 +45,11 @@ export function dayRules(day) {
     day: i + 1,
     extra,
     chickens: Math.min(MAX_CHICKENS, base.chickens + Math.floor((extra + 1) / 2)),
-    drain: base.drain * (1 + 0.08 * extra),
-    wolfEvery: base.wolfEvery && base.wolfEvery.map((s) => Math.max(4, s * 0.92 ** extra)),
-    maxWolves: Math.min(MAX_WOLVES, base.maxWolves + Math.floor((extra + 1) / 2)),
-    pack: Math.min(MAX_PACK, base.pack + Math.floor(extra / 3)),
-    wolfSpeed: base.wolfSpeed * (1 + 0.04 * extra),
+    drain: base.drain * (1 + 0.04 * extra),
+    wolfEvery: base.wolfEvery && base.wolfEvery.map((s) => Math.max(4, s * 0.96 ** extra)),
+    maxWolves: Math.min(MAX_WOLVES, base.maxWolves + Math.floor(extra / 3)),
+    pack: Math.min(MAX_PACK, base.pack + Math.floor(extra / 4)),
+    wolfSpeed: base.wolfSpeed * (1 + 0.02 * extra),
   };
 }
 

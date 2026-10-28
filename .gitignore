@@ -3,5 +3,6 @@ sayings/.raw.wav
 
 # family photos stay on this computer
 *.jpg
+!img/*.jpg
 *.jpeg
 art/source/

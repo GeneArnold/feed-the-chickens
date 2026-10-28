@@ -1,13 +1,15 @@
 // One chicken: pecks around its spot, slowly gets skinnier, and dies (skull and crossbones) if
 // nobody feeds it. A wolf can carry it off; a punch makes him drop it and it scurries home.
+// In spring she has chicks trotting after her (just for looks); at the fair she may be the prize
+// hen, with a blue ribbon on, worth double to feed.
 import * as audio from "./audio.js";
-import { DEPTH, text } from "./ui.js";
+import { DEPTH, SIZE, fit, text } from "./ui.js";
 
 export const HUNGRY = 35; // below this weight the chicken flashes and squawks
 const WANDER = 26;        // how far from its spot it pecks about
 
 export class Chicken {
-  constructor(scene, x, y, name, { weight = 100, appetite = 1 } = {}) {
+  constructor(scene, x, y, name, { weight = 100, appetite = 1, chicks = 0, prize = false } = {}) {
     this.scene = scene;
     this.home = { x, y };
     this.x = x;
@@ -25,8 +27,16 @@ export class Chicken {
 
     this.shadow = scene.add.ellipse(x, y, 40, 10, 0x000000, 0.18).setDepth(DEPTH.onGround);
     this.sprite = scene.add.image(x, y, "chicken").setOrigin(0.5, 0.97);
+    this.size = SIZE.chicken / this.sprite.frame.height; // all her pictures are the same height
     this.bar = scene.add.graphics().setDepth(DEPTH.bars);
     this.tag = text(scene, x, y + 12, name, 12, { strokeThickness: 3, color: "#fff7d6" }).setDepth(DEPTH.bars);
+    this.prize = prize;
+    this.ribbon = prize ? fit(scene.add.image(x, y, "ribbon"), 32) : null;
+    if (prize) this.tag.setColor("#7fc8ff");
+    this.chicks = Array.from({ length: chicks }, (_, i) => ({
+      x: x - 26 - 26 * i, y: y + 3 * i, hop: Math.random() * 6,
+      sprite: fit(scene.add.image(x, y, "chick").setOrigin(0.5, 0.95), 30 - 3 * i),
+    }));
     this.peck();
   }
 
@@ -34,11 +44,14 @@ export class Chicken {
     return this.state === "ok" || this.state === "carried";
   }
 
-  // A little head-bob now and then.
+  // Head down for a peck now and then.
   peck() {
     this.scene.time.delayedCall(Phaser.Math.Between(900, 2600), () => {
       if (this.state !== "ok" || !this.sprite.active) return;
-      this.scene.tweens.add({ targets: this.sprite, angle: this.sprite.flipX ? 18 : -18, duration: 120, yoyo: true, repeat: 1 });
+      this.sprite.setTexture("chicken-peck");
+      this.scene.time.delayedCall(Phaser.Math.Between(250, 450), () => {
+        if (this.state === "ok" && this.sprite.active) this.sprite.setTexture("chicken");
+      });
       if (Math.random() < 0.25) audio.play("cluck");
       this.peck();
     });
@@ -59,10 +72,11 @@ export class Chicken {
         const step = Math.min(d, this.speed * dt);
         this.x += (dx / d) * step;
         this.y += (dy / d) * step;
-        if (Math.abs(dx) > 1) this.sprite.setFlipX(dx > 0);
+        if (Math.abs(dx) > 1) this.sprite.setFlipX(dx < 0);
       } else {
         this.speed = 30; // home again after a scare
       }
+      this.followMama(dt);
       if (this.weight < HUNGRY && now > this.squawkAt) {
         this.squawkAt = now + 2200;
         audio.play("warn");
@@ -71,12 +85,36 @@ export class Chicken {
     this.draw(now);
   }
 
+  // Each chick trots along behind the one in front of it, a little behind her.
+  followMama(dt) {
+    let lead = { x: this.x, y: this.y };
+    const back = this.sprite.flipX ? 1 : -1;
+    for (const c of this.chicks) {
+      const gx = lead.x + back * 26;
+      const gy = lead.y + 3;
+      const d = Math.hypot(gx - c.x, gy - c.y);
+      if (d > 3) {
+        const step = Math.min(d, (40 + d * 2) * dt);
+        c.x += ((gx - c.x) / d) * step;
+        c.y += ((gy - c.y) / d) * step;
+        c.sprite.setFlipX(gx < c.x);
+      }
+      lead = c;
+    }
+  }
+
   draw(now) {
     const w = Math.max(0, this.weight) / 100;
     this.sprite.setPosition(this.x, this.y).setDepth(DEPTH.onGround + this.y / 10);
-    if (this.state !== "dead") this.sprite.setScale(0.72 + 0.48 * w, 0.86 + 0.2 * w);
+    if (this.state !== "dead") this.sprite.setScale(this.size * (0.72 + 0.48 * w), this.size * (0.86 + 0.2 * w));
     this.shadow.setPosition(this.x, this.y).setVisible(this.state === "ok" || this.state === "dead");
     this.tag.setPosition(this.x, this.y + 12);
+    for (const c of this.chicks) {
+      const hop = Math.abs(Math.sin(now / 120 + c.hop)) * 3;
+      c.sprite.setPosition(c.x, c.y - hop).setDepth(DEPTH.onGround + c.y / 10);
+    }
+    this.ribbon?.setPosition(this.x + (this.sprite.flipX ? -10 : 10), this.y - 28).setDepth(this.sprite.depth + 0.05)
+      .setVisible(this.state === "ok" || this.state === "carried");
 
     const hungry = this.state === "ok" && this.weight < HUNGRY;
     if (this.state === "ok") this.sprite.setTint(hungry && Math.floor(now / 220) % 2 ? 0xff8080 : 0xffffff);
@@ -109,7 +147,7 @@ export class Chicken {
   grabbedBy(wolf) {
     this.state = "carried";
     this.wolf = wolf;
-    this.sprite.setTint(0xffffff).setAngle(-25);
+    this.sprite.setTexture("chicken-flap").setTint(0xffffff).setAngle(-15);
     audio.play("bawk");
   }
 
@@ -117,7 +155,7 @@ export class Chicken {
   dropped() {
     this.state = "ok";
     this.wolf = null;
-    this.sprite.setAngle(0);
+    this.sprite.setTexture("chicken").setAngle(0);
     this.speed = 110;
     this.goal = { ...this.home };
     this.goalAt = this.scene.time.now + 3000;
@@ -128,12 +166,13 @@ export class Chicken {
     this.weight = 0;
     this.wolf = null;
     this.bar.clear();
-    this.sprite.setTint(0x9a9a9a);
+    this.sprite.setTexture("chicken").setTint(0x9a9a9a);
     this.scene.tweens.add({ targets: this.sprite, angle: 180, y: this.y - 24, duration: 350, ease: "Back.easeOut" });
     this.skull = this.scene.add.image(this.x, this.y - 50, "skull").setDepth(DEPTH.bars).setScale(0);
     this.scene.tweens.add({ targets: this.skull, scale: 1, duration: 400, ease: "Back.easeOut" });
     this.scene.tweens.add({ targets: this.skull, y: this.y - 58, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: 400 });
     this.tag.setText(`RIP ${this.name}`).setColor("#cfcfcf");
+    this.loseChicks();
     this.scene.onChickenLost(this, "starved");
   }
 
@@ -144,6 +183,15 @@ export class Chicken {
     this.sprite.setVisible(false);
     this.shadow.setVisible(false);
     this.tag.setVisible(false);
+    this.loseChicks();
     this.scene.onChickenLost(this, "stolen");
+  }
+
+  // With their mama gone, the chicks scamper off the farm.
+  loseChicks() {
+    for (const c of this.chicks) {
+      this.scene.tweens.add({ targets: c.sprite, alpha: 0, x: c.x + Phaser.Math.Between(-60, 60), duration: 900, onComplete: () => c.sprite.destroy() });
+    }
+    this.chicks = [];
   }
 }

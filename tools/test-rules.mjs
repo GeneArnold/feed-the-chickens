@@ -21,12 +21,12 @@ for (let day = 1; day <= 30; day++) {
 assert.equal(dayRules(1).wolfEvery, null, "day 1 has no wolf");
 assert.ok(dayRules(2).wolfEvery, "the wolf arrives on day 2");
 assert.ok(dayRules(4).pack >= 2, "wolves come in pairs by day 4");
-assert.ok(dayRules(15).maxWolves > dayRules(6).maxWolves, "more wolves on the later days");
+assert.ok(dayRules(15).maxWolves > dayRules(9).maxWolves, "more wolves on the later days");
 assert.ok(dayRules(40).wolfEvery[0] >= 4, "wolves never come more than every 4 seconds");
 
-assert.equal(sceneryIndex(1, 6), 0);
-assert.equal(sceneryIndex(6, 6), 5);
-assert.equal(sceneryIndex(7, 6), 0);
+assert.equal(sceneryIndex(1, 9), 0);
+assert.equal(sceneryIndex(9, 9), 8);
+assert.equal(sceneryIndex(10, 9), 0);
 
 const r = dayRules(1);
 assert.equal(drainAt(r, 0), r.drain);
@@ -46,5 +46,11 @@ assert.deepEqual(sundown(0, 0), { points: 0, perfect: false });
 for (let i = 0; i < DAYS.length; i++) {
   const rules = dayRules(i + 1);
   assert.ok(100 / drainAt(rules, rules.dayLength) > 15, `day ${i + 1}: chickens starve too fast`);
+}
+// From the last new scenery on, no day is a big jump: at most one more chicken, one more wolf, 10% hungrier.
+for (let day = 7; day <= 30; day++) {
+  const [a, b] = [dayRules(day - 1), dayRules(day)];
+  assert.ok(b.chickens - a.chickens <= 1 && b.maxWolves - a.maxWolves <= 1, `day ${day}: too big a jump`);
+  assert.ok(b.drain <= a.drain * 1.1, `day ${day}: too much hungrier`);
 }
 console.log("rules ok");

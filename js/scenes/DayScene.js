@@ -5,7 +5,7 @@ import * as sayings from "../sayings.js";
 import { listenForGestures } from "../gestures.js";
 import { LEVELS, paintLevel } from "../levels.js";
 import { MAX_HEARTS, dayRules, sceneryIndex } from "../rules.js";
-import { H, W, setupCamera, text, woodSign } from "../ui.js";
+import { H, W, fit, setupCamera, text, woodSign } from "../ui.js";
 
 export class DayScene extends Phaser.Scene {
   constructor() {
@@ -20,7 +20,7 @@ export class DayScene extends Phaser.Scene {
     const rules = dayRules(day);
     const lap = Math.floor((day - 1) / LEVELS.length);
 
-    paintLevel(this, level);
+    paintLevel(this, { ...level, mud: [], water: [] }); // the puddles land somewhere new once the day starts
     this.add.rectangle(0, 0, W, H, 0x000000, 0.35).setOrigin(0);
 
     woodSign(this, W / 2, 170, 420, 160);
@@ -41,13 +41,13 @@ export class DayScene extends Phaser.Scene {
     text(this, W / 2, 455, tip, 22, { color: "#ffffff", strokeThickness: 4, wrap: W - 110 });
 
     // Uncle Bob says his piece
-    const bob = this.add.image(140, 900, "bob-big").setOrigin(0.5, 1).setScale(0.85);
-    this.tweens.add({ targets: bob, y: 894, duration: 500, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    const bob = fit(this.add.image(120, 935, "bob").setOrigin(0.5, 1), 270);
+    this.tweens.add({ targets: bob, y: 929, duration: 500, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     const line = lap ? sayings.byId("day-again") : sayings.byId(level.line);
     this.speech(330, 600, line.text);
     this.time.delayedCall(350, () => audio.playVoice(sayings.clip(line)));
 
-    const go = text(this, 340, 900, "TAP TO START", 30, { color: "#ffe066", strokeThickness: 6 });
+    const go = text(this, 375, 880, "TAP TO START", 30, { color: "#ffe066", strokeThickness: 6 });
     this.tweens.add({ targets: go, scale: 1.08, duration: 600, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
 
     listenForGestures(this, {
@@ -65,8 +65,6 @@ export class DayScene extends Phaser.Scene {
     g.fillStyle(0xffffff).lineStyle(4, 0x2b1d14);
     g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 20);
     g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 20);
-    const bx = x - w / 2 + 40;
-    g.fillTriangle(bx, y + h / 2 - 3, bx + 34, y + h / 2 - 3, bx - 40, y + h / 2 + 60);
     label.setDepth(1);
     g.setAlpha(0);
     label.setAlpha(0);

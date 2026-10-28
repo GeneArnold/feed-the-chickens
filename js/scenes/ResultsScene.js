@@ -8,7 +8,7 @@ import { shareGame, snapshot } from "../share.js";
 import { listenForGestures } from "../gestures.js";
 import { START_HEARTS } from "../rules.js";
 import * as store from "../storage.js";
-import { W, farmBackdrop, setupCamera, text, woodSign } from "../ui.js";
+import { W, farmBackdrop, fit, setupCamera, text, woodSign } from "../ui.js";
 
 const SHARE = { x: W / 2 - 130, y: 770, w: 260, h: 64 };
 
@@ -66,7 +66,7 @@ export class ResultsScene extends Phaser.Scene {
     box.fillStyle(0x000000, 0.35).fillRoundedRect(60, 370, W - 120, 300, 20);
     rows.forEach(([icon, label, n], i) => {
       const y = 410 + i * 72;
-      this.add.image(110, y, icon).setDisplaySize(44, icon === "chicken" ? 41 : 44);
+      fit(this.add.image(110, y, icon), 44);
       text(this, 150, y, label, 26, { originX: 0, strokeThickness: 5 });
       text(this, W - 90, y, String(n), 32, { originX: 1, color: "#ffe066", strokeThickness: 5 });
     });

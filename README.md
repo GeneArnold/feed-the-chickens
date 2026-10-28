@@ -11,10 +11,10 @@ Flingers (`../family-holiday-game`).
 ## Run it on a computer
 
 ```
-python3 -m http.server 8794 --bind 0.0.0.0
+python3 tools/serve.py
 ```
 
-Open http://127.0.0.1:8794 (or `http://<this computer's address>:8794` on a phone on the home
+Open http://127.0.0.1:8795 (or `http://<this computer's address>:8795` on a phone on the home
 network) and click where you'd tap. Extras in the address:
 
 - `?debug` outlines every chicken spot, the feed bin's tap area, the wolf dens and the mud.
@@ -50,7 +50,7 @@ On localhost and plain http the offline cache is switched off, so edits show up 
 
 ## How it gets harder
 
-Each day is one of six sceneries, in order, and each brings something new:
+Each day is one of nine sceneries, in order, and each brings something new:
 
 | Day | Scenery | What's new |
 |---|---|---|
@@ -60,10 +60,16 @@ Each day is one of six sceneries, in order, and each brings something new:
 | 4 | Muddy Monday | rain, mud that slows Uncle Bob to half speed, wolves come in pairs |
 | 5 | Harvest Moon | night: only Uncle Bob's lantern lights the farm; wolves' eyes glow; up to 3 wolves |
 | 6 | Frosty Fields | snow slows him a little, 7 chickens, a smaller bucket |
-| 7+ | round again | the same sceneries, about 8% hungrier every day, up to 8 chickens, up to 5 wolves in packs of 3 |
+| 7 | Spring Chicks | every hen has two chicks trotting after her (just for looks) |
+| 8 | Pumpkin Patch | 8 chickens; pumpkin vines that slow Uncle Bob like mud, somewhere new each time |
+| 9 | County Fair | one prize hen with a blue ribbon, worth double to feed |
+| 10+ | round again | the same sceneries, about 4% hungrier every day, another wolf every third day (up to 5), packs of 3 from day 13 |
+
+Days 6 to 9 only creep up, so a new scenery never comes with a big jump in how hard it is.
 
 Within a day the chickens get hungrier as the sun goes down. All the numbers are in `DAYS` in
-`js/rules.js`; `node tools/test-rules.mjs` checks the game only ever gets harder.
+`js/rules.js`; `node tools/test-rules.mjs` checks the game only ever gets harder, and from day 7
+on never by much in one day.
 
 ## Releasing
 
@@ -103,8 +109,8 @@ played with no signal wait on the phone and post the next time the game opens.
 | `sayings/sayings.json` | Uncle Bob's lines, by when he says them; `trash` lines are for texting a score |
 | `sayings/voices/` | Uncle Bob's recorded lines, one mp3 per line |
 | `js/sayings.js` | Picks a line and finds its recording |
-| `js/textures.js` | Art drawn in code: Uncle Bob's body (with his cartoon face), chickens, the wolf, skull, eggs, corn |
-| `img/bob-head.png` | Uncle Bob's cartoon face |
+| `img/` | The cartoon art: Uncle Bob, the hens, the wolf, chicks, the prize ribbon, mud, puddles, pumpkin vines, and one background per scenery (`bg-<id>.jpg`) |
+| `js/textures.js` | Art drawn in code: the feed bin, skull, eggs, corn, weather; and stand-ins for any missing picture |
 | `js/audio.js` | Placeholder sound effects (clucks, howls, punches), and the voice clips |
 | `js/storage.js` | What the phone remembers: initials, its top 10, totals, unsent games |
 | `js/online.js` | Talks to the Shed service; queues games while offline |
@@ -114,21 +120,25 @@ played with no signal wait on the phone and post the next time the game opens.
 | `js/config.js` | Where the game lives (for dare links) and the Shed service's address |
 | `sw.js`, `manifest.webmanifest` | Offline play and installing as an app |
 | `amplify.yml` | How Amplify publishes a push |
-| `tools/` | Records the voices, draws the icons, tests the rules |
+| `tools/` | Serves the game for testing, makes the art, records the voices, draws the icons, tests the rules |
 
 ## Changing things
 
 - **How hard it is:** change the numbers in `DAYS` in `js/rules.js`, then
   `node tools/test-rules.mjs`.
-- **A scenery:** add an entry to `LEVELS` in `js/levels.js` with a `paint` function, 8 chicken
-  spots, a feed bin, and wolf dens just off the screen edge. Check the spots with `?debug`.
-  For the artist's art, replace `paint` with one that places the picture.
-- **Real art:** load the artist's pictures in `BootScene` under the same names (`bob`,
-  `bob-punch`, `bob-big`, `chicken`, `wolf`, `wolf-dizzy`, `skull`, …) and delete the drawing in
-  `js/textures.js`.
-- **Uncle Bob's face:** `img/bob-head.png`, a cartoon made from a family photo with SwarmUI on
-  cerebro (Flux, image-to-image), cut out and put on the drawn body (`makeBob` in
-  `js/textures.js`). The photo and the working files stay on Gene's computer in `art/source/`,
+- **A scenery:** make its background, `img/bg-<id>.jpg`, then add an entry to `LEVELS` in
+  `js/levels.js` with 8 chicken spots, a feed bin on the grass, and wolf dens just off the screen
+  edge, and a row to `DAYS` in `js/rules.js`. Add the picture to `sw.js`. Check the spots with
+  `?debug`.
+- **The art:** made on cerebro's SwarmUI (Z-Image Turbo) with `python3 tools/swarm.py <name>
+  "<prompt>"`, which saves 4 tries to `art/source/gen/` (git ignores `art/source/`). Then
+  `python3 tools/cutout.py art/source/gen/<pick>.png <sprite name>` turns the white background
+  transparent and saves `img/<sprite name>.png`. Every character faces right. A background is saved
+  straight to `img/bg-<scenery id>.jpg` (768 x 1344, with `--raw --w 768 --h 1344`);
+  `tools/nofence.py` paints a fence along the bottom out of a background. `BootScene` lists the
+  sprites (`SPRITES`) and loads every scenery's background.
+- **Uncle Bob's face:** made from a family photo with SwarmUI (Flux, image-to-image) and put on
+  his cartoon body. The photo and the working files stay on Gene's computer in `art/source/`,
   which git ignores: only the cartoon is ever published.
 - **A line for Uncle Bob:** add it to `sayings/sayings.json` with a short `id`, then
   `node tools/make-voices.mjs` records just the new lines. Chatterbox runs on cerebro

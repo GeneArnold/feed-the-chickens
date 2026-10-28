@@ -7,6 +7,9 @@
     { "id": "day-mud", "text": "Rained all night. Mud's deep, so watch your step!", "voiced": true },
     { "id": "day-night", "text": "It's dark out here. Wolves love the dark.", "voiced": true },
     { "id": "day-snow", "text": "Brr! Cold chickens get hungry fast!", "voiced": true },
+    { "id": "day-chicks", "text": "Look at all the little chicks! Their mamas need feeding.", "voiced": true },
+    { "id": "day-pumpkin", "text": "Pumpkin time! Don't trip over those vines.", "voiced": true },
+    { "id": "day-fair", "text": "County fair today! Keep that prize hen fat and happy.", "voiced": true },
     { "id": "day-again", "text": "Back at it! These chickens are hungrier than ever.", "voiced": true }
   ],
   "feed": [

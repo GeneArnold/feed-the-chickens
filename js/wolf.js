@@ -1,7 +1,7 @@
 // The wolf: comes in from a den at the edge of the farm, sneaks up on a chicken, grabs it, and
 // drags it back home. One punch from Uncle Bob and he drops it and runs off yelping.
 import * as audio from "./audio.js";
-import { DEPTH, W } from "./ui.js";
+import { DEPTH, SIZE, W, fit } from "./ui.js";
 
 const GRAB_MS = 600;  // how long he wrestles the chicken before dragging it off
 const DRAG = 0.6;     // dragging a chicken is slower than sneaking
@@ -20,7 +20,7 @@ export class Wolf {
     this.grabUntil = 0;
 
     this.shadow = scene.add.ellipse(this.x, this.y, 70, 14, 0x000000, 0.2).setDepth(DEPTH.onGround);
-    this.sprite = scene.add.image(this.x, this.y, "wolf").setOrigin(0.54, 0.97).setAlpha(0);
+    this.sprite = fit(scene.add.image(this.x, this.y, "wolf").setOrigin(0.5, 0.97).setAlpha(0), SIZE.wolf);
     scene.tweens.add({ targets: this.sprite, alpha: 1, duration: 400 });
     this.eyes = scene.add.image(this.x, this.y, "wolf-eyes").setDepth(DEPTH.bars).setVisible(Boolean(scene.level.dark));
     this.trot = 0;
@@ -52,7 +52,10 @@ export class Wolf {
       }
     } else if (this.state === "grab") {
       this.carry(now);
-      if (now > this.grabUntil) this.state = "drag";
+      if (now > this.grabUntil) {
+        this.state = "drag";
+        this.sprite.setTexture("wolf-run");
+      }
     } else if (this.state === "drag") {
       const home = this.moveTo(this.den.x, this.den.y, this.speed * DRAG, dt);
       this.carry(now);
@@ -93,13 +96,13 @@ export class Wolf {
   }
 
   draw() {
-    const flip = this.facing === 1;
+    const flip = this.facing === -1; // the pictures face right
     this.sprite.setFlipX(flip);
     if (this.state !== "flee") this.sprite.setAngle(0);
     const hop = Math.abs(Math.sin(this.trot / 9)) * 4;
     this.sprite.setPosition(this.x, this.y - hop).setDepth(DEPTH.onGround + this.y / 10);
     this.shadow.setPosition(this.x, this.y);
-    this.eyes.setPosition(this.x + (flip ? 29 : -29), this.y - 46 - hop);
+    this.eyes.setPosition(this.x + (flip ? -18 : 18), this.y - 56 - hop);
   }
 
   // Uncle Bob's punch. → the chicken he dropped, or null. false when he can't be punched.
@@ -122,6 +125,7 @@ export class Wolf {
     if (this.target?.state === "carried") this.target.dropped();
     this.setTarget(null);
     this.state = "flee";
+    this.sprite.setTexture("wolf-run");
     this.den = this.nearestExit();
   }
 

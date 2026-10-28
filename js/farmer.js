@@ -1,7 +1,6 @@
 // Uncle Bob, as you steer him round the farm: walks to wherever you tap, carries the feed bucket,
 // and throws a punch when he reaches a wolf.
-import { BOB_RES, BOB_SIZE } from "./textures.js";
-import { DEPTH, W } from "./ui.js";
+import { DEPTH, SIZE, W, fit } from "./ui.js";
 
 export const SPEED = 250; // pixels per second on dry grass
 const BOUNDS = { x1: 24, x2: W - 24, y1: 330, y2: 930 };
@@ -19,7 +18,7 @@ export class Farmer {
     this.walked = 0;
     this.busyUntil = 0;
     this.shadow = scene.add.ellipse(x, y, 46, 12, 0x000000, 0.22).setDepth(DEPTH.onGround);
-    this.sprite = scene.add.image(x, y, "bob").setOrigin(BOB_SIZE.footX / BOB_SIZE.w, 0.98).setScale(1 / BOB_RES);
+    this.sprite = fit(scene.add.image(x, y, "bob").setOrigin(0.5, 0.98), SIZE.bob);
   }
 
   goTo(goal) {
@@ -71,7 +70,8 @@ export class Farmer {
 
   // A short pause while he tosses the feed.
   toss(towardX) {
-    this.sprite.setFlipX(towardX < this.x);
+    this.sprite.setFlipX(towardX < this.x).setTexture("bob-pour");
     this.busyUntil = this.scene.time.now + 180;
+    this.scene.time.delayedCall(320, () => this.sprite.active && this.sprite.texture.key === "bob-pour" && this.sprite.setTexture("bob"));
   }
 }

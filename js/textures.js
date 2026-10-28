@@ -221,9 +221,12 @@ function makeBob(scene, key, s, punch) {
 export function makeTextures(scene) {
   makeBob(scene, "bob", BOB_RES, false);
   makeBob(scene, "bob-punch", BOB_RES, true);
-  makeBob(scene, "bob-big", 3, false);
+  makeBob(scene, "bob-pour", BOB_RES, false);
   draw(scene, "chicken", 64, 60, paintChicken);
+  draw(scene, "chicken-peck", 64, 60, paintChicken);
+  draw(scene, "chicken-flap", 64, 60, paintChicken);
   draw(scene, "wolf", 112, 72, (g) => paintWolf(g, false));
+  draw(scene, "wolf-run", 112, 72, (g) => paintWolf(g, false));
   draw(scene, "wolf-dizzy", 112, 72, (g) => paintWolf(g, true));
 
   // Glowing wolf eyes, drawn above the dark on night levels.
@@ -328,6 +331,10 @@ export function makeTextures(scene) {
   draw(scene, "feather", 12, 6, (g) => {
     g.fillStyle(0xffffff);
     g.fillEllipse(6, 3, 12, 5);
+  });
+  draw(scene, "confetti", 5, 9, (g) => {
+    g.fillStyle(0xffffff);
+    g.fillRect(0, 0, 5, 9);
   });
   draw(scene, "firefly", 6, 6, (g) => {
     g.fillStyle(0xf6ff8a);

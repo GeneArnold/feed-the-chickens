@@ -7,7 +7,7 @@ import { install, installHint, onHintChange } from "../install.js";
 import { listenForGestures } from "../gestures.js";
 import { checkForUpdate, update, versionLabel } from "../update.js";
 import { START_HEARTS } from "../rules.js";
-import { W, farmBackdrop, inside, setupCamera, text, woodSign } from "../ui.js";
+import { SIZE, W, farmBackdrop, fit, inside, setupCamera, text, woodSign } from "../ui.js";
 
 const INSTALL = { x: 40, y: 906, w: W - 80, h: 34 }; // the install hint, or the update button
 const VERSION_AREA = { x: 60, y: 940, w: W - 120, h: 20 };
@@ -26,19 +26,20 @@ export class TitleScene extends Phaser.Scene {
     woodSign(this, W / 2, 200, 470, 170);
     text(this, W / 2, 160, "FEED THE", 52, { color: "#fff3c4" });
     text(this, W / 2, 228, "CHICKENS", 70, { color: "#ffe066", strokeThickness: 10 });
+    text(this, W / 2, 312, "Help Uncle Bob feed his chickens!", 26, { color: "#ffffff", strokeThickness: 6 });
 
     // Uncle Bob and a few of his girls
-    const bob = this.add.image(150, 760, "bob-big").setOrigin(0.5, 1).setScale(0.9);
-    this.tweens.add({ targets: bob, scaleY: 0.92, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    for (const [x, y, flip, s] of [[330, 720, false, 1.3], [430, 760, true, 1.1], [370, 830, false, 1.2], [480, 690, true, 0.9]]) {
-      const c = this.add.image(x, y, "chicken").setOrigin(0.5, 0.97).setFlipX(flip).setScale(s);
-      const peck = () => this.tweens.add({
-        targets: c, angle: flip ? 20 : -20, duration: 130, yoyo: true, repeat: 1,
-        delay: Phaser.Math.Between(600, 2400), onComplete: peck,
+    const bob = fit(this.add.image(150, 770, "bob").setOrigin(0.5, 1), 290);
+    this.tweens.add({ targets: bob, scaleY: bob.scaleY * 1.02, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    for (const [x, y, left, s] of [[330, 720, true, 1.3], [430, 760, false, 1.1], [370, 830, true, 1.2], [480, 690, false, 0.9]]) {
+      const c = fit(this.add.image(x, y, "chicken").setOrigin(0.5, 0.97).setFlipX(left), SIZE.chicken * 1.5 * s);
+      const peck = () => this.time.delayedCall(Phaser.Math.Between(600, 2400), () => {
+        c.setTexture("chicken-peck");
+        this.time.delayedCall(350, () => { c.setTexture("chicken"); peck(); });
       });
       peck();
     }
-    this.speech(250, 400, "Hey, let's go\nfeed those chickens!");
+    this.speech(250, 420, "Hey, let's go\nfeed those chickens!");
 
     // Who is playing (tap to change initials), and sound on or off (tap to change).
     const badge = this.add.graphics();
@@ -53,10 +54,10 @@ export class TitleScene extends Phaser.Scene {
     const best = store.topScore();
     const challenge = store.get("challenge");
     if (challenge) {
-      const banner = text(this, W / 2, 316, `${challenge.initials} DARES YOU: BEAT ${challenge.score.toLocaleString()}!`, 24, { color: "#7CFC9A" });
+      const banner = text(this, W / 2, 350, `${challenge.initials} DARES YOU: BEAT ${challenge.score.toLocaleString()}!`, 24, { color: "#7CFC9A" });
       this.tweens.add({ targets: banner, scale: 1.06, duration: 400, yoyo: true, repeat: -1 });
     } else if (best) {
-      text(this, W / 2, 316, `YOUR BEST  ${best.toLocaleString()}`, 20, { color: "#ffffff", strokeThickness: 4 });
+      text(this, W / 2, 350, `YOUR BEST  ${best.toLocaleString()}`, 20, { color: "#ffffff", strokeThickness: 4 });
     }
 
     const go = text(this, W / 2, 852, "SWIPE UP TO PLAY", 36, { color: "#ffe066", strokeThickness: 7 });
@@ -97,9 +98,6 @@ export class TitleScene extends Phaser.Scene {
     g.fillStyle(0xffffff).lineStyle(4, 0x2b1d14);
     g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 20);
     g.strokeRoundedRect(x - w / 2, y - h / 2, w, h, 20);
-    g.fillTriangle(x - 90, y + h / 2 - 3, x - 50, y + h / 2 - 3, x - 110, y + h / 2 + 50);
-    g.lineBetween(x - 90, y + h / 2, x - 110, y + h / 2 + 50);
-    g.lineBetween(x - 50, y + h / 2, x - 110, y + h / 2 + 50);
     label.setDepth(1);
     const all = [g, label];
     this.tweens.add({ targets: all, y: "-=6", duration: 1100, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });

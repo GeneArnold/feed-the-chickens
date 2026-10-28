@@ -20,6 +20,13 @@ export function fingerAt(scene, pointer) {
   return { x: p.x, y: p.y, t: performance.now() };
 }
 
+// How tall each character stands on the farm, in layout pixels. Pictures of any size drop in:
+// fit() scales one to a height, so a new picture (or the artist's) needs no other change.
+export const SIZE = { bob: 112, chicken: 64, wolf: 84 };
+export function fit(img, height) {
+  return img.setScale(height / img.frame.height);
+}
+
 export function inside(x, y, r) {
   return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 }
@@ -55,19 +62,20 @@ export function bubble(scene, x, y, words, ms = 1700, { follow = null, lift = 0 
   const c = scene.add.container(0, 0, [g, label]).setDepth(DEPTH.bubble).setScale(0.6);
   const place = (px, py) => {
     const cx = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, px));
-    const cy = Math.max(h / 2 + 100, py - h / 2 - 16 - lift);
+    // Above the point (Uncle Bob's head); near the top of the farm there's no room, so below his feet.
+    const above = py - h / 2 - 16 - lift;
+    const below = above < h / 2 + 100;
+    const cy = below ? py + h / 2 + 22 : above;
     c.setPosition(cx, cy);
     g.clear();
     g.fillStyle(0xffffff, 0.97);
     g.lineStyle(3, 0x2b1d14);
     g.fillRoundedRect(-w / 2, -h / 2, w, h, 16);
     g.strokeRoundedRect(-w / 2, -h / 2, w, h, 16);
-    const tailX = Math.max(-w / 2 + 20, Math.min(w / 2 - 20, px - cx));
-    g.fillTriangle(tailX - 10, h / 2 - 2, tailX + 10, h / 2 - 2, tailX, h / 2 + 14);
   };
   place(x, y);
   if (follow) {
-    const tick = () => c.active && place(follow.x, follow.y - 100);
+    const tick = () => c.active && place(follow.x, follow.y);
     scene.events.on("update", tick);
     c.once("destroy", () => scene.events.off("update", tick));
   }
@@ -83,8 +91,14 @@ export function floatText(scene, x, y, words, colour = "#ffe066", size = 30) {
   return t;
 }
 
-// A plain farm backdrop for the menu screens: blue sky, green hills, a fence.
+// The farm behind the menu screens: the Sunny Barnyard picture, set lower so the barn shows below
+// the title sign, with its sky carried on up to the top. The drawing below if the picture is missing.
 export function farmBackdrop(scene) {
+  if (scene.textures.exists("bg-barnyard")) {
+    scene.add.rectangle(0, 0, W, H, 0x5ec6f8).setOrigin(0);
+    const img = scene.add.image(W / 2, 150, "bg-barnyard").setOrigin(0.5, 0);
+    return img.setScale(Math.max(W / img.width, (H - 150) / img.height));
+  }
   const g = scene.add.graphics();
   g.fillGradientStyle(0x7ec8f0, 0x7ec8f0, 0xc9ecff, 0xc9ecff, 1);
   g.fillRect(0, 0, W, 560);

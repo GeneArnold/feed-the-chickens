@@ -6,10 +6,10 @@ import * as sayings from "../sayings.js";
 import * as store from "../storage.js";
 import { Chicken } from "../chicken.js";
 import { Farmer } from "../farmer.js";
-import { LEVELS, paintLevel } from "../levels.js";
+import { LEVELS, paintLevel, scatterPuddles } from "../levels.js";
 import { CLOSE_CALL, EGGS_PER_BASKET, MAX_HEARTS, POINTS, START_HEARTS, dayRules, drainAt, feedPoints, sceneryIndex, sundown } from "../rules.js";
 import { Wolf } from "../wolf.js";
-import { DEPTH, H, W, bubble, fingerAt, floatText, inside, setupCamera, text } from "../ui.js";
+import { DEPTH, H, SIZE, W, bubble, fingerAt, floatText, inside, setupCamera, text } from "../ui.js";
 
 const NAMES = ["Henrietta", "Gertrude", "Nugget", "Dolly", "Peep", "Clucky", "Betty", "Drumstick", "Mabel", "Omelette", "Goldie", "Pecky", "Daisy", "Ruby", "Biscuit", "Pearl"];
 const EGG_MS = 10000;          // an egg left lying around this long is gone
@@ -31,7 +31,7 @@ export class PlayScene extends Phaser.Scene {
     this.hearts = hearts;
     this.stats = stats ? { ...stats } : { fed: 0, punched: 0, eggs: 0, lost: 0, basket: 0 };
     this.rules = dayRules(day);
-    this.level = LEVELS[sceneryIndex(day, LEVELS.length)];
+    this.level = scatterPuddles(LEVELS[sceneryIndex(day, LEVELS.length)]);
     this.phase = "play"; // play | sundown | gameover
     this.t = 0;
     this.lostToday = 0;
@@ -47,10 +47,13 @@ export class PlayScene extends Phaser.Scene {
 
     const names = Phaser.Utils.Array.Shuffle([...NAMES]);
     const n = this.rules.chickens;
+    const prize = this.level.prize ? Phaser.Math.Between(0, n - 1) : -1;
     this.chickens = this.level.spots.slice(0, n).map(([x, y], i) => new Chicken(this, x, y, names[i], {
       // staggered, so they don't all get hungry at once
       weight: 100 - (i * 45) / n + Phaser.Math.Between(-4, 4),
       appetite: Phaser.Math.FloatBetween(0.85, 1.15),
+      chicks: this.level.chicks ?? 0,
+      prize: i === prize,
     }));
     this.farmer = new Farmer(this, bin.x, Math.min(bin.y + 70, 900), this.rules.bucket);
     this.wolves = [];
@@ -182,7 +185,7 @@ export class PlayScene extends Phaser.Scene {
     if (playing && (this.t >= this.rules.dayLength || !this.chickens.some((c) => c.alive))) this.endDay();
   }
 
-  // Mud halves Uncle Bob's speed; some sceneries (snow) slow him a little everywhere.
+  // Mud (and pumpkin vines) halves Uncle Bob's speed; some sceneries (snow) slow him a little everywhere.
   groundSpeed(x, y) {
     const inMud = this.level.mud.some((m) => ((x - m.x) / m.rx) ** 2 + ((y - m.y) / m.ry) ** 2 < 1);
     return (this.level.speed ?? 1) * (inMud ? 0.5 : 1);
@@ -204,13 +207,14 @@ export class PlayScene extends Phaser.Scene {
     if (this.farmer.scoops <= 0) return this.bucketEmpty();
     this.farmer.scoops--;
     const close = c.weight < CLOSE_CALL;
-    const points = feedPoints(c.weight);
+    const points = feedPoints(c.weight) * (c.prize ? 2 : 1);
     this.farmer.toss(c.x);
     this.tossCorn(c);
     c.feed();
     audio.play("feed");
     this.stats.fed++;
-    this.addScore(points, c.x, c.y - 70, close ? `CLOSE CALL! +${points}` : `+${points}`, close ? "#7CFC9A" : "#ffe066");
+    const label = close ? `CLOSE CALL! +${points}` : c.prize ? `PRIZE HEN! +${points}` : `+${points}`;
+    this.addScore(points, c.x, c.y - 70, label, close ? "#7CFC9A" : c.prize ? "#7fc8ff" : "#ffe066");
     if (close) this.say("close");
     else if (Math.random() < 0.3) this.say("feed", { quiet: true });
     if (this.farmer.scoops === 0) this.binArrow.setVisible(true);
@@ -356,7 +360,7 @@ export class PlayScene extends Phaser.Scene {
     const line = sayings.random(kind);
     if (!line.text) return;
     this.lastSaidAt = now;
-    bubble(this, this.farmer.x, this.farmer.y - 100, line.text, 1600, { follow: this.farmer });
+    bubble(this, this.farmer.x, this.farmer.y, line.text, 1600, { follow: this.farmer, lift: SIZE.bob - 10 });
     audio.playVoice(sayings.clip(line));
   }
 
@@ -473,6 +477,16 @@ export class PlayScene extends Phaser.Scene {
       this.add.particles(0, 0, "leaf", {
         x: { min: 0, max: W + 100 }, y: -10, lifespan: 9000, speedY: { min: 40, max: 70 }, speedX: { min: -60, max: -20 },
         rotate: { start: 0, end: 540 }, frequency: 700, advance: 9000,
+      }).setDepth(depth);
+    } else if (w === "petals") {
+      this.add.particles(0, 0, "feather", {
+        x: { min: 0, max: W + 100 }, y: -10, lifespan: 9000, speedY: { min: 35, max: 60 }, speedX: { min: -50, max: -15 },
+        rotate: { start: 0, end: 360 }, scale: { min: 0.5, max: 0.8 }, tint: [0xffc8dc, 0xffffff, 0xffe0ec], frequency: 500, advance: 9000,
+      }).setDepth(depth);
+    } else if (w === "confetti") {
+      this.add.particles(0, 0, "confetti", {
+        x: { min: 0, max: W }, y: -10, lifespan: 7000, speedY: { min: 60, max: 110 }, speedX: { min: -30, max: 30 },
+        rotate: { start: 0, end: 720 }, tint: [0xe63946, 0xffe066, 0x4ea8ff, 0x7cfc9a, 0xff8fd8], frequency: 260, advance: 7000,
       }).setDepth(depth);
     } else if (w === "fireflies") {
       this.add.particles(0, 0, "firefly", {
