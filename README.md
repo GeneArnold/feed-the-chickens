@@ -33,7 +33,7 @@ On localhost and plain http the offline cache is switched off, so edits show up 
   its icon and a timer bar in the score bar:
   - **Super Feed** (golden feed sack): every chicken fed full at once.
   - **Speedy Sneakers**: Uncle Bob runs faster for 8 seconds.
-  - **Guard Dog**: the wolves run off and none come for 10 seconds.
+  - **Guard Dog**: for 10 seconds a dog races to each wolf and bites it on the snout (WOOF!), as good as a punch.
   - **Bottomless Bucket**: a full bucket that never runs out for 8 seconds.
   The numbers are `POWERS` and `powerUpsFor()` in `js/rules.js`.
 - **Each day** opens with a card: the day, the scenery, what's in store, and a line from Uncle Bob.

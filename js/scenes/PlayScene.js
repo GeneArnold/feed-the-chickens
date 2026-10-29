@@ -15,6 +15,8 @@ import { DEPTH, H, SIZE, W, bubble, fingerAt, fit, floatText, inside, setupCamer
 const NAMES = ["Henrietta", "Gertrude", "Nugget", "Dolly", "Peep", "Clucky", "Betty", "Drumstick", "Mabel", "Omelette", "Goldie", "Pecky", "Daisy", "Ruby", "Biscuit", "Pearl"];
 const EGG_MS = 10000;          // an egg left lying around this long is gone
 const EGG_PICKUP = 46;         // Uncle Bob picks up an egg he walks this close to
+const DOG_SPEED = 340;         // the guard dog runs much faster than Uncle Bob (250) or a wolf
+const DOG_BITE = 40;           // and bites a wolf it gets this close to
 const FULL = 85;               // a chicken this well fed doesn't want more (no scoop wasted)
 const DRAG = 18;               // a finger moving this far is steering Uncle Bob, not tapping
 const PAUSE = { x: 0, y: 0, w: 60, h: 64 }; // the II button, top left of the score bar
@@ -173,8 +175,7 @@ export class PlayScene extends Phaser.Scene {
       this.nextWolfAt = this.t + Phaser.Math.FloatBetween(lo, hi);
       const active = this.wolves.filter((w) => w.punchable).length;
       const room = this.rules.maxWolves - active;
-      const guarded = this.power?.name === "dog"; // no wolf comes near while the dog's about
-      if (room > 0 && !guarded && this.t < this.rules.dayLength - 6) this.spawnWolves(Math.min(room, this.rules.pack));
+      if (room > 0 && this.t < this.rules.dayLength - 6) this.spawnWolves(Math.min(room, this.rules.pack));
     }
     for (const w of this.wolves) w.update(dt, time, this.chickens);
     this.wolves = this.wolves.filter((w) => w.state !== "gone");
@@ -262,21 +263,23 @@ export class PlayScene extends Phaser.Scene {
     floatText(this, this.level.bin.x, this.level.bin.y - 80, "FULL BUCKET!", "#fff3c4", 24);
   }
 
-  punch(wolf) {
+  // Uncle Bob's punch, or the guard dog's bite (byDog): either way the wolf spins off dizzy.
+  punch(wolf, byDog = false) {
     if (!wolf.punchable) return;
-    this.farmer.punch(wolf.x);
+    if (!byDog) this.farmer.punch(wolf.x);
     const dropped = wolf.punch();
-    audio.play("punch");
+    audio.play(byDog ? "bark" : "punch");
     this.cameras.main.shake(120, 0.004);
-    const pow = this.add.image((wolf.x + this.farmer.x) / 2, wolf.y - 40, "pow").setDepth(DEPTH.effects).setScale(0.2);
-    const powText = text(this, pow.x, pow.y, "POW!", 26, { color: "#c0392b", stroke: "#ffffff", strokeThickness: 5 }).setDepth(DEPTH.effects);
+    const by = byDog ? this.dog : this.farmer;
+    const pow = this.add.image((wolf.x + by.x) / 2, wolf.y - 40, "pow").setDepth(DEPTH.effects).setScale(0.2);
+    const powText = text(this, pow.x, pow.y, byDog ? "WOOF!" : "POW!", 26, { color: "#c0392b", stroke: "#ffffff", strokeThickness: 5 }).setDepth(DEPTH.effects);
     this.tweens.add({ targets: [pow, powText], scale: 1.1, duration: 140, ease: "Back.easeOut" });
     this.tweens.add({ targets: [pow, powText], alpha: 0, delay: 450, duration: 250, onComplete: () => { pow.destroy(); powText.destroy(); } });
     this.feathers.explode(dropped ? 10 : 0, wolf.x, wolf.y - 30);
     this.stats.punched++;
     const points = POINTS.punch + (dropped ? POINTS.rescue : 0);
     this.addScore(points, wolf.x, wolf.y - 90, dropped ? `RESCUE! +${points}` : `+${points}`, "#ff9e5e");
-    this.say("punch");
+    if (!byDog) this.say("punch");
   }
 
   // A wolf, or on later days a pack of them, each from a different den and after a different chicken.
@@ -411,7 +414,6 @@ export class PlayScene extends Phaser.Scene {
       this.farmer.scoops = this.rules.bucket;
       this.binArrow.setVisible(false);
     } else if (name === "dog") {
-      for (const w of this.wolves) w.runOff();
       this.dog.setPosition(this.farmer.x < W / 2 ? W + 60 : -60, this.farmer.y).setVisible(true);
       audio.play("bark");
     }
@@ -452,18 +454,41 @@ export class PlayScene extends Phaser.Scene {
       this.spill.setPosition(bob.x + (left ? -22 : 22), bob.y - 46);
       if (!this.spill.emitting) this.spill.start();
     }
-    if (name === "dog") {
-      // the dog trots round and round Uncle Bob, keeping watch
-      this.dogAngle += dt * 2.2;
-      const tx = Phaser.Math.Clamp(bob.x + Math.cos(this.dogAngle) * 90, 30, W - 30);
-      const ty = Phaser.Math.Clamp(bob.y + Math.sin(this.dogAngle) * 40, 340, 930);
-      const dx = tx - this.dog.x;
-      const step = Math.min(1, dt * 6);
-      this.dog.x += dx * step;
-      this.dog.y += (ty - this.dog.y) * step;
-      if (Math.abs(dx) > 1) this.dog.setFlipX(dx < 0);
-      this.dog.setDepth(DEPTH.onGround + this.dog.y / 10).setAlpha(showing ? 1 : 0.4);
+    if (name === "dog") this.moveDog(dt, now, showing);
+  }
+
+  // The guard dog races to the nearest wolf on the farm and bites it on the snout, just like a
+  // punch. With no wolf about, it trots round and round Uncle Bob, keeping watch.
+  moveDog(dt, now, showing) {
+    const dog = this.dog;
+    const bob = this.farmer;
+    let wolf = null;
+    let best = Infinity;
+    for (const w of this.wolves) {
+      if (!w.punchable || now < (w.waitUntil || 0) || w.x < 10 || w.x > W - 10) continue;
+      const d = Math.hypot(w.x - dog.x, w.y - dog.y);
+      if (d < best) [wolf, best] = [w, d];
     }
+    if (wolf && best < DOG_BITE && this.phase === "play") return this.punch(wolf, true);
+    let tx;
+    let ty;
+    if (wolf) {
+      [tx, ty] = [wolf.x, wolf.y];
+    } else {
+      this.dogAngle += dt * 2.2;
+      tx = Phaser.Math.Clamp(bob.x + Math.cos(this.dogAngle) * 90, 30, W - 30);
+      ty = Phaser.Math.Clamp(bob.y + Math.sin(this.dogAngle) * 40, 340, 930);
+    }
+    const dx = tx - dog.x;
+    const dy = ty - dog.y;
+    const d = Math.hypot(dx, dy);
+    const step = Math.min(d, DOG_SPEED * dt);
+    if (d > 0.5) {
+      dog.x += (dx / d) * step;
+      dog.y += (dy / d) * step;
+    }
+    if (Math.abs(dx) > 1) dog.setFlipX(dx < 0);
+    dog.setDepth(DEPTH.onGround + dog.y / 10).setAlpha(showing ? 1 : 0.4);
   }
 
   // Called by a chicken that starved or was carried off.

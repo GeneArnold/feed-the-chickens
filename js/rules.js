@@ -98,7 +98,7 @@ export function sundown(alive, lostToday) {
 export const POWERS = {
   superfeed: { seconds: 0, weight: 1, says: "SUPER FEED!" },        // every chicken fed full
   sneakers: { seconds: 8, weight: 3, says: "SPEEDY SNEAKERS!" },    // Uncle Bob runs faster
-  dog: { seconds: 10, weight: 2, says: "GUARD DOG!" },              // wolves run off and stay away
+  dog: { seconds: 10, weight: 2, says: "GUARD DOG!" },              // a dog that chases off every wolf
   bucket: { seconds: 8, weight: 2, says: "BOTTOMLESS BUCKET!" },    // a full bucket that never runs out
 };
 export const SNEAKER_SPEED = 1.6; // how much faster Uncle Bob goes in sneakers
