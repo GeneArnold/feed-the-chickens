@@ -1,16 +1,17 @@
 // After a game: the score, how far you got, where it landed on the board, and a dare's outcome.
-// Swipe up to play again, down for the high scores, right for the menu; swipe left or tap
-// TRASH TALK to text the score to someone. With the family board online, the first swipe up
-// posts the score there instead (swipe down skips).
+// Scores stay on this phone. Big buttons: PLAY AGAIN, TRASH TALK, HIGH SCORES,
+// MENU (the Fun Shed's standard results screen); swiping up plays again too.
 import * as audio from "../audio.js";
-import * as online from "../online.js";
 import { shareGame, snapshot } from "../share.js";
 import { listenForGestures } from "../gestures.js";
 import { START_HEARTS } from "../rules.js";
 import * as store from "../storage.js";
-import { W, farmBackdrop, fit, setupCamera, text, woodSign } from "../ui.js";
+import { W, button, farmBackdrop, fit, inside, setupCamera, text, woodSign } from "../ui.js";
 
-const SHARE = { x: W / 2 - 130, y: 770, w: 260, h: 64 };
+const AGAIN = { x: W / 2 - 170, y: 600, w: 340, h: 84 };
+const SHARE = { x: W / 2 - 170, y: 706, w: 340, h: 70 };
+const BOARD = { x: W / 2 - 170, y: 800, w: 160, h: 60 };
+const MENU = { x: W / 2 + 10, y: 800, w: 160, h: 60 };
 
 export class ResultsScene extends Phaser.Scene {
   constructor() {
@@ -63,78 +64,39 @@ export class ResultsScene extends Phaser.Scene {
       ["skull", "Chickens lost", stats.lost],
     ];
     const box = this.add.graphics();
-    box.fillStyle(0x000000, 0.35).fillRoundedRect(60, 370, W - 120, 300, 20);
+    box.fillStyle(0x000000, 0.35).fillRoundedRect(70, 356, W - 140, 214, 20);
     rows.forEach(([icon, label, n], i) => {
-      const y = 410 + i * 72;
-      fit(this.add.image(110, y, icon), 44);
-      text(this, 150, y, label, 26, { originX: 0, strokeThickness: 5 });
-      text(this, W - 90, y, String(n), 32, { originX: 1, color: "#ffe066", strokeThickness: 5 });
+      const y = 386 + i * 51;
+      fit(this.add.image(116, y, icon), 38);
+      text(this, 150, y, label, 25, { originX: 0, strokeThickness: 5 });
+      text(this, W - 100, y, String(n), 30, { originX: 1, color: "#ffe066", strokeThickness: 5 });
     });
 
-    const pill = this.add.graphics();
-    pill.fillStyle(0x2b1d14).fillRoundedRect(SHARE.x - 4, SHARE.y - 4, SHARE.w + 8, SHARE.h + 8, 36);
-    pill.fillStyle(0xe63946).fillRoundedRect(SHARE.x, SHARE.y, SHARE.w, SHARE.h, 32);
-    this.shareText = text(this, W / 2, SHARE.y + SHARE.h / 2, "📣 TRASH TALK", 28);
-    this.hintBig = text(this, W / 2, 870, "", 30, { color: "#ffe066", strokeThickness: 6 });
-    this.hintSmall = text(this, W / 2, 914, "", 17, { color: "#ffffff", strokeThickness: 4 });
-    this.asking = online.enabled() && score > 0; // offer to post to the family board first
-    this.showHints();
+    const buttons = [
+      [AGAIN, 0x2a9d3a, "PLAY AGAIN", 38],
+      [SHARE, 0xe63946, "📣 TRASH TALK", 30],
+      [BOARD, 0x2a6f9d, "HIGH SCORES", 20],
+      [MENU, 0x7d5a3c, "MENU", 24],
+    ];
+    this.shareText = buttons.map(([r, c, words, size]) => button(this, r, c, words, size))[1].label;
 
     // The share picture is this screen, taken once the score has finished counting up.
-    this.time.delayedCall(countUp + 150, () => {
-      this.hintBig.setVisible(false);
-      this.hintSmall.setVisible(false);
-      snapshot(this.game).then((png) => {
-        this.picture = png;
-        this.hintBig.setVisible(true);
-        this.hintSmall.setVisible(true);
-      });
-    });
+    this.time.delayedCall(countUp + 150, () => snapshot(this.game).then((png) => (this.picture = png)));
 
     listenForGestures(this, {
       lockMs: 900,
-      onSwipe: (dir) => {
-        if (this.asking) {
-          if (dir === "up") this.post();
-          else if (dir === "down") this.skipPost();
-          return;
-        }
-        if (dir === "up") this.scene.start("Day", { day: 1, score: 0, hearts: START_HEARTS, stats: null });
-        else if (dir === "down") this.scene.start("Board");
-        else if (dir === "left") this.share();
-        else this.scene.start("Title");
-      },
       onTap: (x, y) => {
-        if (x > SHARE.x && x < SHARE.x + SHARE.w && y > SHARE.y && y < SHARE.y + SHARE.h) this.share();
+        if (inside(x, y, AGAIN)) this.again();
+        else if (inside(x, y, SHARE)) this.share();
+        else if (inside(x, y, BOARD)) this.scene.start("Board");
+        else if (inside(x, y, MENU)) this.scene.start("Title");
       },
+      onSwipe: (dir) => dir === "up" && this.again(),
     });
   }
 
-  showHints() {
-    if (this.asking) {
-      this.hintBig.setText("SWIPE UP: POST TO THE FAMILY BOARD").setFontSize(24);
-      this.hintSmall.setText("swipe down to skip");
-    } else {
-      this.hintBig.setText("SWIPE UP TO PLAY AGAIN").setFontSize(30);
-      this.hintSmall.setText("↓ high scores   ← trash talk   → menu");
-    }
-  }
-
-  async post() {
-    this.asking = false;
-    this.hintBig.setText("Posting...");
-    const { score, day, stats } = this.game_;
-    await online.postGame(score, day, stats);
-    const waiting = store.get("outbox").length > 0;
-    audio.play(waiting ? "pop" : "cheer");
-    this.showHints();
-    this.hintSmall.setText(waiting ? "no signal: it'll post next time you play" : "posted to the family board!");
-    this.time.delayedCall(2200, () => this.scene.isActive() && this.showHints());
-  }
-
-  skipPost() {
-    this.asking = false;
-    this.showHints();
+  again() {
+    this.scene.start("Day", { day: 1, score: 0, hearts: START_HEARTS, stats: null });
   }
 
   async share() {

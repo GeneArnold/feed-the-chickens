@@ -1,5 +1,5 @@
-// The title: Uncle Bob on the farm, "Hey, let's go feed those chickens!" Swipe up (or tap) to
-// play, swipe down for the high scores. Tap your initials to change them, or SOUND to mute.
+// The title: Uncle Bob on the farm, "Hey, let's go feed those chickens!" Big PLAY and HIGH SCORES
+// buttons (swiping up or down does the same). Tap your initials to change them, or SOUND to mute.
 // At the bottom: the version, and an update button when a newer release is out (js/update.js).
 import * as audio from "../audio.js";
 import * as store from "../storage.js";
@@ -7,10 +7,12 @@ import { install, installHint, onHintChange } from "../install.js";
 import { listenForGestures } from "../gestures.js";
 import { checkForUpdate, update, versionLabel } from "../update.js";
 import { START_HEARTS } from "../rules.js";
-import { SIZE, W, farmBackdrop, fit, inside, setupCamera, text, woodSign } from "../ui.js";
+import { SIZE, W, button, farmBackdrop, fit, inside, setupCamera, text, woodSign } from "../ui.js";
 
 const INSTALL = { x: 40, y: 906, w: W - 80, h: 34 }; // the install hint, or the update button
 const VERSION_AREA = { x: 60, y: 940, w: W - 120, h: 20 };
+const PLAY = { x: 40, y: 806, w: 250, h: 84 };
+const SCORES = { x: 310, y: 816, w: 190, h: 64 };
 // ?day=4 starts on day 4, for trying out the later days.
 const START_DAY = Math.max(1, parseInt(new URLSearchParams(location.search).get("day"), 10) || 1);
 
@@ -31,7 +33,7 @@ export class TitleScene extends Phaser.Scene {
     // Uncle Bob and a few of his girls
     const bob = fit(this.add.image(150, 770, "bob").setOrigin(0.5, 1), 290);
     this.tweens.add({ targets: bob, scaleY: bob.scaleY * 1.02, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    for (const [x, y, left, s] of [[330, 720, true, 1.3], [430, 760, false, 1.1], [370, 830, true, 1.2], [480, 690, false, 0.9]]) {
+    for (const [x, y, left, s] of [[330, 720, true, 1.3], [430, 760, false, 1.1], [370, 800, true, 1.2], [480, 690, false, 0.9]]) {
       const c = fit(this.add.image(x, y, "chicken").setOrigin(0.5, 0.97).setFlipX(left), SIZE.chicken * 1.5 * s);
       const peck = () => this.time.delayedCall(Phaser.Math.Between(600, 2400), () => {
         c.setTexture("chicken-peck");
@@ -60,9 +62,9 @@ export class TitleScene extends Phaser.Scene {
       text(this, W / 2, 350, `YOUR BEST  ${best.toLocaleString()}`, 20, { color: "#ffffff", strokeThickness: 4 });
     }
 
-    const go = text(this, W / 2, 852, "SWIPE UP TO PLAY", 36, { color: "#ffe066", strokeThickness: 7 });
+    const go = button(this, PLAY, 0x2a9d3a, "▶ PLAY", 40).label;
     this.tweens.add({ targets: go, scale: 1.08, duration: 600, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
-    text(this, W / 2, 884, "swipe down for the high scores", 18, { color: "#ffffff", strokeThickness: 4 });
+    button(this, SCORES, 0x2a6f9d, "HIGH SCORES", 22);
     this.installBox = this.add.graphics();
     this.installText = text(this, W / 2, INSTALL.y + INSTALL.h / 2, "", 17, { color: "#ffffff", strokeThickness: 3 });
     this.versionText = text(this, W / 2, 951, versionLabel(), 12, { color: "#e8f5d0", strokeThickness: 2 });
@@ -75,6 +77,7 @@ export class TitleScene extends Phaser.Scene {
     this.events.once("shutdown", () => document.removeEventListener("visibilitychange", back));
 
     listenForGestures(this, {
+      lockMs: 800, // so the tap that brought you here (MENU) can't start a game
       onSwipe: (dir) => {
         if (dir === "up") this.play();
         else if (dir === "down") this.scene.start("Board");
@@ -83,9 +86,11 @@ export class TitleScene extends Phaser.Scene {
         if (inside(x, y, this.meArea)) this.scene.start("Name");
         else if (this.hint?.update && inside(x, y, INSTALL)) this.runUpdate();
         else if (this.hint?.tap && inside(x, y, INSTALL)) install();
+        else if (this.hint?.link && inside(x, y, INSTALL)) window.open(this.hint.link, "_blank");
         else if (inside(x, y, VERSION_AREA)) this.lookForUpdate(true);
         else if (inside(x, y, this.soundArea)) this.toggleSound();
-        else if (y > 120 && y < INSTALL.y - 10) this.play();
+        else if (inside(x, y, SCORES)) this.scene.start("Board");
+        else if (inside(x, y, PLAY)) this.play();
       },
     });
   }
@@ -134,7 +139,7 @@ export class TitleScene extends Phaser.Scene {
     this.hint = this.updateReady ? { words: "⬆ NEW VERSION! TAP TO UPDATE", tap: true, update: true } : installHint();
     this.installBox.clear();
     this.installText.setText(this.hint?.words ?? "");
-    if (!this.hint) return;
+    if (!this.hint || this.hint.link) return; // the "how to install" link is plain words
     this.installBox.fillStyle(this.hint.update ? 0xe07a1f : this.hint.tap ? 0x2a9d8f : 0x000000, this.hint.tap ? 1 : 0.3);
     this.installBox.fillRoundedRect(INSTALL.x, INSTALL.y, INSTALL.w, INSTALL.h, 17);
   }

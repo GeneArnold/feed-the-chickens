@@ -2,14 +2,12 @@
 // The browser may clear it (clearing site data, or uninstalling the app); that only costs scores.
 const KEY = "chickens.v1";
 const BOARD_SIZE = 10;
-export const BOARD = "farm"; // one high-score board: every game starts on day 1
 
 const DEFAULTS = {
-  player: null,    // { id, initials }: who plays on this phone; id tells two "BOB"s apart online
+  player: null,    // { initials }: who plays on this phone
   sound: true,
   board: [],       // this phone's top 10, [{ initials, score, day, at }], best first
   totals: { fed: 0, punched: 0, eggs: 0, lost: 0, games: 0, bestDay: 0 },
-  outbox: [],      // finished games waiting to be sent to the family board
   challenge: null, // { initials, score } from a dare link, until it is played
 };
 
@@ -44,12 +42,8 @@ export function set(name, value) {
 
 export function setInitials(initials) {
   const data = load();
-  data.player = { id: data.player?.id || randomId(), initials };
+  data.player = { initials };
   persist();
-}
-
-function randomId() {
-  return crypto.randomUUID?.() || Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 export function board() {

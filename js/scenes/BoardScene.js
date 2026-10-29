@@ -1,9 +1,8 @@
-// The high scores, arcade style: a top 10 with the day each player reached. Swipe or tap to go
-// back. With the family board online it shows the whole family; otherwise this phone.
-import * as online from "../online.js";
+// The high scores, arcade style: a top 10 with the day each player reached. The BACK button (or
+// any tap or swipe) goes back. Scores stay on this phone: to get on its board, you play on it.
 import * as store from "../storage.js";
 import { listenForGestures } from "../gestures.js";
-import { H, W, farmBackdrop, setupCamera, text, woodSign } from "../ui.js";
+import { H, W, button, farmBackdrop, setupCamera, text, woodSign } from "../ui.js";
 
 const MEDALS = ["#ffd700", "#e8eef5", "#e0995e"];
 
@@ -18,25 +17,15 @@ export class BoardScene extends Phaser.Scene {
     this.add.rectangle(0, 0, W, H, 0x000000, 0.3).setOrigin(0);
     woodSign(this, W / 2, 90, 420, 120);
     text(this, W / 2, 72, "HIGH SCORES", 46, { color: "#ffe066" });
-    this.whose = text(this, W / 2, 120, "THIS PHONE", 16, { color: "#fff3c4", strokeThickness: 3 });
+    text(this, W / 2, 120, "ON THIS PHONE", 16, { color: "#fff3c4", strokeThickness: 3 });
     this.content = this.add.container(0, 0);
-    text(this, W / 2, H - 34, "tap or swipe to go back", 17, { color: "#ffffff", strokeThickness: 4 });
+    button(this, { x: W / 2 - 100, y: 858, w: 200, h: 62 }, 0x7d5a3c, "BACK", 28);
     this.drawScores(store.board());
-    this.showFamily();
 
     listenForGestures(this, {
       onSwipe: () => this.scene.start("Title"),
       onTap: () => this.scene.start("Title"),
     });
-  }
-
-  async showFamily() {
-    const family = await online.topScores();
-    // Until anyone has posted, the phone's own board is more fun than an empty one.
-    if (family?.length && this.scene.isActive()) {
-      this.whose.setText("THE WHOLE FAMILY");
-      this.drawScores(family);
-    }
   }
 
   drawScores(rows) {
@@ -49,7 +38,7 @@ export class BoardScene extends Phaser.Scene {
     this.content.add(text(this, 300, 186, "DAY", 14, { color: "#fff3c4", strokeThickness: 3 }));
     rows.slice(0, 10).forEach((r, i) => {
       const y = 230 + i * 64;
-      const mine = r.player ? r.player === me.id : r.initials === me.initials;
+      const mine = r.initials === me.initials;
       const colour = MEDALS[i] || (mine ? "#7CFC9A" : "#ffffff");
       if (mine) {
         const g = this.add.graphics();

@@ -1,5 +1,4 @@
 // Loads Uncle Bob's lines and the cartoon characters, draws the rest of the art, then opens the game.
-import * as online from "../online.js";
 import * as sayings from "../sayings.js";
 import * as store from "../storage.js";
 import { readChallenge } from "../share.js";
@@ -37,7 +36,6 @@ export class BootScene extends Phaser.Scene {
     sayings.setData(this.cache.json.get("sayings") || {});
     makeTextures(this);
     readChallenge();
-    online.flush(); // games played offline last time
     this.scene.start(store.get("player") ? "Title" : "Name");
   }
 }

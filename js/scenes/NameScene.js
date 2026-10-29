@@ -1,6 +1,6 @@
 // Arcade-style initials, once, the first time the game is opened (and again from the title).
-// Swipe up or down to change a letter, right for the next letter, left to go back; swipe right on
-// the last letter (or tap DONE) to finish. Taps work too: above or below a letter changes it.
+// Tap the arrows above or below a letter to change it, tap a letter to pick it, then DONE.
+// Swipes work too: up or down changes a letter, right for the next one, left to go back.
 import * as audio from "../audio.js";
 import * as store from "../storage.js";
 import { listenForGestures } from "../gestures.js";
@@ -34,7 +34,7 @@ export class NameScene extends Phaser.Scene {
     done.fillStyle(0x2b1d14).fillRoundedRect(DONE.x - 4, DONE.y - 4, DONE.w + 8, DONE.h + 8, 22);
     done.fillStyle(0x2a9d3a).fillRoundedRect(DONE.x, DONE.y, DONE.w, DONE.h, 20);
     this.doneText = text(this, W / 2, DONE.y + DONE.h / 2, "DONE", 40);
-    text(this, W / 2, 790, "swipe ↑ ↓ to change a letter\nswipe → for the next one", 22, { color: "#ffffff", strokeThickness: 4 });
+    text(this, W / 2, 790, "tap the arrows to change a letter\ntap a letter to pick it", 22, { color: "#ffffff", strokeThickness: 4 });
     this.draw();
 
     listenForGestures(this, {

@@ -1,5 +1,6 @@
 // Before each day: the scenery, "DAY 3", Uncle Bob saying what's in store, and a tip.
-// Tap (or swipe up) to start the day.
+// It moves on to the day by itself after a few seconds (longer on day 1, to read how to play);
+// TAP TO FEED (or any swipe) skips the wait.
 import * as audio from "../audio.js";
 import * as sayings from "../sayings.js";
 import { listenForGestures } from "../gestures.js";
@@ -15,7 +16,9 @@ export class DayScene extends Phaser.Scene {
   create(round) {
     setupCamera(this);
     this.round = round;
+    this.started = false;
     const { day, hearts } = round;
+    const wait = day === 1 ? 6000 : 4000; // long enough for Uncle Bob's line
     const level = LEVELS[sceneryIndex(day, LEVELS.length)];
     const rules = dayRules(day);
     const lap = Math.floor((day - 1) / LEVELS.length);
@@ -47,13 +50,14 @@ export class DayScene extends Phaser.Scene {
     this.speech(330, 600, line.text);
     this.time.delayedCall(350, () => audio.playVoice(sayings.clip(line)));
 
-    const go = text(this, 375, 880, "TAP TO START", 30, { color: "#ffe066", strokeThickness: 6 });
-    this.tweens.add({ targets: go, scale: 1.08, duration: 600, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    const go = text(this, 375, 870, "TAP TO FEED!", 40, { color: "#ffe066", strokeThickness: 8 });
+    this.tweens.add({ targets: go, scale: 1.08, duration: 500, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.time.delayedCall(wait, () => this.start());
 
     listenForGestures(this, {
       lockMs: 700,
       onTap: () => this.start(),
-      onSwipe: (dir) => dir === "up" && this.start(),
+      onSwipe: () => this.start(),
     });
   }
 
@@ -72,6 +76,8 @@ export class DayScene extends Phaser.Scene {
   }
 
   start() {
+    if (this.started) return;
+    this.started = true;
     audio.unlock();
     this.scene.start("Play", this.round);
   }

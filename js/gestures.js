@@ -1,5 +1,6 @@
-// Menu screens are driven by one finger: swipes and taps, no buttons to aim for.
-// Touches in the first half second of a screen are ignored, so the tap that ended the last
+// Fun Shed kit v1.2
+// One-finger input for every screen: taps (for the buttons) and swipes (shortcuts, and the play itself).
+// Touches in the first lockMs of a screen are ignored, so the tap that ended the last
 // screen does not also act on this one.
 import * as audio from "./audio.js";
 import { fingerAt } from "./ui.js";
@@ -31,6 +32,7 @@ export function listenForGestures(scene, { onSwipe, onTap, lockMs = 500 }) {
     if (p.id === id) path.push(point(p));
   });
   const up = (p) => {
+    audio.unlock(); // phones only allow sound once a touch has ended, so try again here
     if (p.id !== id) return;
     id = null;
     const end = point(p);

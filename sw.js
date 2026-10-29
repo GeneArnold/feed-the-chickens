@@ -18,7 +18,6 @@ const FILES = [
   "js/gestures.js",
   "js/install.js",
   "js/levels.js",
-  "js/online.js",
   "js/rules.js",
   "js/sayings.js",
   "js/share.js",

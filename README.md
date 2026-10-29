@@ -24,10 +24,12 @@ On localhost and plain http the offline cache is switched off, so edits show up 
 
 ## How to play
 
-- **First time:** swipe in your three initials, arcade style (↑ ↓ change a letter, → next).
-- **Title:** Uncle Bob says "Hey, let's go feed those chickens!" Swipe up (or tap) to play, down
-  for the high scores. Tap your initials to change them.
+- **First time:** your three initials, arcade style: tap the arrows to change a letter, tap a
+  letter to pick it, then DONE (swiping works too).
+- **Title:** Uncle Bob says "Hey, let's go feed those chickens!" Big PLAY and HIGH SCORES buttons (or swipe up
+  and down). Tap your initials to change them.
 - **Each day** opens with a card: the day, the scenery, what's in store, and a line from Uncle Bob.
+  It starts the day by itself after a few seconds (longer on day 1); TAP TO FEED skips the wait.
 - **On the farm**, drag your finger and Uncle Bob just walks along under it. Tap and he walks over
   and does something:
   - tap a **chicken** and he feeds it (one scoop from the bucket). The bar over it is how fat it is;
@@ -39,13 +41,13 @@ On localhost and plain http the offline cache is switched off, so edits show up 
   - well-fed chickens lay **eggs**, rolled out to one side. Tap one (or walk over it) to pick it
     up: 50 points, and every 8 eggs fill the basket (top right) for a heart back, or 500 points
     when your hearts are full.
-- **II** (top left) pauses: KEEP PLAYING, or QUIT, which ends the game with the score saved. The
+- **II** (top left) pauses: KEEP PLAYING, QUIT (ends the game with the score saved), or SOUND ON/OFF. The
   phone's back gesture pauses too, and so does switching to another app.
 - A starved or stolen chicken costs a heart. You start with 3. Lose them all and it's game over.
 - At **sundown** each chicken still alive is worth 100. A day without losing any is a PERFECT DAY:
   250 more and a heart back (up to 5).
-- **After a game:** swipe up to play again, down for the high scores, left (or tap TRASH TALK) to
-  text your score with a dare link, right for the menu. A dare link like `…/?beat=GEN-4250` puts
+- **After a game:** big buttons (the Fun Shed's standard results screen): PLAY AGAIN (or swipe
+  up), TRASH TALK to text your score with a dare link, HIGH SCORES and MENU. A dare link like `…/?beat=GEN-4250` puts
   "GEN DARES YOU: BEAT 4,250" on the title screen.
 
 ## How it gets harder
@@ -88,13 +90,12 @@ Same as Fruitcake:
   `aws amplify create-domain-association --profile entertainment --region us-east-2 --app-id <id> --domain-name thefunshed.com --sub-domain-settings prefix=chickens,branchName=main`
 - Then the card on the Fun Shed home page (`shed/site/index.html`) flips to "Play now".
 
-## The family score board
+## High scores stay on the phone
 
-Online high scores go through the shared **Shed service** at `https://api.thefunshed.com` (the
-`shed` repo), where this game is the `chickens` app (`scoresUrl` in `js/config.js`; set it to
-`null` to keep the board on the phone). A finished game posts its score and its `farm` counters
-(chickens fed, wolves punched, eggs found) in one request (`POST /v1/chickens/scores`). Games
-played with no signal wait on the phone and post the next time the game opens.
+Each phone is its own arcade cabinet: its top 10 and its farm totals live on that phone, and to get
+on its board you play on it (the Fun Shed house kit, v1.2). The game talks to no server; the only
+request besides its own files is the `version.json` check for updates, which adds `&app=1` when
+the game runs from the home screen so the Fun Shed can count plays. Trash talk is the social part.
 
 ## Files
 
@@ -113,11 +114,10 @@ played with no signal wait on the phone and post the next time the game opens.
 | `js/textures.js` | Art drawn in code: the feed bin, skull, eggs, corn, weather; and stand-ins for any missing picture |
 | `js/audio.js` | Placeholder sound effects (clucks, howls, punches), and the voice clips |
 | `js/storage.js` | What the phone remembers: initials, its top 10, totals, unsent games |
-| `js/online.js` | Talks to the Shed service; queues games while offline |
 | `js/share.js` | Trash talk: the share sheet (or a text message), the score picture, dare links |
 | `js/update.js`, `js/version.js` | The version on the title screen, the check for a newer release, the update button |
-| `js/install.js` | The title screen's "install me" hint, for phones playing in a browser tab |
-| `js/config.js` | Where the game lives (for dare links) and the Shed service's address |
+| `js/install.js` | The title screen's "install me" hint for phones playing in a browser tab: a one-tap install on Chrome for Android, otherwise a "how to install" link to https://thefunshed.com/install |
+| `js/config.js` | Where the game lives (for dare links) |
 | `sw.js`, `manifest.webmanifest` | Offline play and installing as an app |
 | `amplify.yml` | How Amplify publishes a push |
 | `tools/` | Serves the game for testing, makes the art, records the voices, draws the icons, tests the rules |

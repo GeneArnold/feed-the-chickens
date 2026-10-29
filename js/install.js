@@ -1,6 +1,8 @@
+// Fun Shed kit v1.3
 // The "install me" hint on the title screen, for phones playing in a browser tab.
-// Chrome on Android can install the game itself, so its hint is tappable. iPhones are told the Share
-// steps. Other Android browsers (Firefox only makes a shortcut) are sent to Chrome, which makes a real app.
+// Chrome on Android can install the game itself, so its hint is a tappable button. Every other phone
+// gets a small "how to install" link to the Shed's install page, which keeps the steps for each phone.
+const INSTALL_PAGE = "https://thefunshed.com/install";
 let promptEvent = null;
 let changed = () => {};
 
@@ -14,20 +16,16 @@ window.addEventListener("appinstalled", () => {
   changed();
 });
 
-function installed() {
+export function installed() {
   return matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches || navigator.standalone === true;
 }
 
-// → { words, tap } for the title screen, or null when there's nothing to say (installed, or a computer).
+// → { words, tap } or { words, link } for the title screen, or null when there's nothing to say
+// (installed, or a computer).
 export function installHint() {
   if (installed()) return null;
-  const ua = navigator.userAgent;
-  const iphone = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-  const android = /Android/.test(ua);
   if (promptEvent) return { words: "📲 TAP HERE TO INSTALL THE GAME", tap: true };
-  if (iphone) return { words: "📲 To install: Share ⬆, then Add to Home Screen" };
-  if (android && /Chrome\//.test(ua)) return { words: "📲 To install: ⋮ menu, then Install app" };
-  if (android) return { words: "📲 To install it as an app, open this in Chrome" };
+  if (/iPhone|iPad|iPod|Android/.test(navigator.userAgent) || navigator.maxTouchPoints > 1) return { words: "📲 how to install", link: INSTALL_PAGE };
   return null;
 }
 

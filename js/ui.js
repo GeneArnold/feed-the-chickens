@@ -1,11 +1,8 @@
-// Small pieces of screen shared by the scenes: text styles, speech bubbles, floating points.
+// Fun Shed kit v1.2
+// Small pieces of screen shared by the scenes: text styles, signs, buttons, floating points.
 export const W = 540;
 export const H = 960;
 export const FONT = '"Trebuchet MS", "Segoe UI", system-ui, sans-serif';
-
-// Drawing order on the farm. Animals and Uncle Bob sit between GROUND and TOP, sorted by how far
-// down the screen they stand, so whoever is lower is drawn in front.
-export const DEPTH = { ground: 0, onGround: 5, top: 700, dark: 800, bars: 850, effects: 900, hud: 1000, bubble: 1100, overlay: 1200 };
 
 // The game is laid out on a 540 x 960 screen but drawn at twice that, so it stays sharp on phones.
 // Every scene calls this first; positions everywhere are in the 540 x 960 layout.
@@ -20,9 +17,7 @@ export function fingerAt(scene, pointer) {
   return { x: p.x, y: p.y, t: performance.now() };
 }
 
-// How tall each character stands on the farm, in layout pixels. Pictures of any size drop in:
-// fit() scales one to a height, so a new picture (or the artist's) needs no other change.
-export const SIZE = { bob: 112, chicken: 64, wolf: 84 };
+// Scales a picture to a height, so a picture of any size drops in.
 export function fit(img, height) {
   return img.setScale(height / img.frame.height);
 }
@@ -46,6 +41,45 @@ export function text(scene, x, y, str, size = 28, opts = {}) {
     })
     .setOrigin(opts.originX ?? 0.5, opts.originY ?? 0.5);
 }
+
+export function floatText(scene, x, y, words, colour = "#ffe066", size = 30) {
+  const t = text(scene, x, y, words, size, { color: colour }).setDepth(9000);
+  scene.tweens.add({ targets: t, y: y - 70, alpha: 0, duration: 900, ease: "Cubic.easeOut", onComplete: () => t.destroy() });
+  return t;
+}
+
+// A big plain button with words on it. r: { x, y, w, h }.
+export function button(scene, r, colour, words, size = 32) {
+  const g = scene.add.graphics();
+  g.fillStyle(0x2b1d14).fillRoundedRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8, 24);
+  g.fillStyle(colour).fillRoundedRect(r.x, r.y, r.w, r.h, 20);
+  const label = text(scene, r.x + r.w / 2, r.y + r.h / 2, words, size);
+  return { g, label };
+}
+
+// A wooden farm sign to put words on.
+export function woodSign(scene, x, y, w, h) {
+  const g = scene.add.graphics();
+  g.fillStyle(0x5a3a1e);
+  g.fillRoundedRect(x - w / 2 - 6, y - h / 2 - 6, w + 12, h + 12, 14);
+  g.fillStyle(0x9a6434);
+  g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 10);
+  g.lineStyle(2, 0x7d4f27);
+  for (let ly = y - h / 2 + h / 4; ly < y + h / 2; ly += h / 4) g.lineBetween(x - w / 2 + 6, ly, x + w / 2 - 6, ly);
+  g.fillStyle(0x3b2a1e);
+  for (const [nx, ny] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.fillCircle(x + nx * (w / 2 - 12), y + ny * (h / 2 - 12), 4);
+  return g;
+}
+
+// game-only: the farm's own helpers, below the kit's shared ones.
+
+// Drawing order on the farm. Animals and Uncle Bob sit between GROUND and TOP, sorted by how far
+// down the screen they stand, so whoever is lower is drawn in front.
+export const DEPTH = { ground: 0, onGround: 5, top: 700, dark: 800, bars: 850, effects: 900, hud: 1000, bubble: 1100, overlay: 1200 };
+
+// How tall each character stands on the farm, in layout pixels. Pictures of any size drop in:
+// fit() scales one to a height, so a new picture (or the artist's) needs no other change.
+export const SIZE = { bob: 112, chicken: 64, wolf: 84 };
 
 // A speech bubble above a point, kept inside the screen, gone after `ms`. One at a time: a new
 // bubble replaces the last one, so quick lines never stack up unreadable bubbles.
@@ -85,12 +119,6 @@ export function bubble(scene, x, y, words, ms = 1700, { follow = null, lift = 0 
   return c;
 }
 
-export function floatText(scene, x, y, words, colour = "#ffe066", size = 30) {
-  const t = text(scene, x, y, words, size, { color: colour }).setDepth(DEPTH.effects);
-  scene.tweens.add({ targets: t, y: y - 70, alpha: 0, duration: 1100, ease: "Cubic.easeOut", onComplete: () => t.destroy() });
-  return t;
-}
-
 // The farm behind the menu screens: the Sunny Barnyard picture, set lower so the barn shows below
 // the title sign, with its sky carried on up to the top. The drawing below if the picture is missing.
 export function farmBackdrop(scene) {
@@ -121,19 +149,5 @@ export function farmBackdrop(scene) {
     g.fillEllipse(x + 30 * s, y - 16 * s, 70 * s, 40 * s);
     g.fillEllipse(x - 30 * s, y - 8 * s, 60 * s, 34 * s);
   }
-  return g;
-}
-
-// A wooden sign with words on it, like the one over the barn door.
-export function woodSign(scene, x, y, w, h) {
-  const g = scene.add.graphics();
-  g.fillStyle(0x5a3a1e);
-  g.fillRoundedRect(x - w / 2 - 6, y - h / 2 - 6, w + 12, h + 12, 14);
-  g.fillStyle(0x9a6434);
-  g.fillRoundedRect(x - w / 2, y - h / 2, w, h, 10);
-  g.lineStyle(2, 0x7d4f27);
-  for (let ly = y - h / 2 + h / 4; ly < y + h / 2; ly += h / 4) g.lineBetween(x - w / 2 + 6, ly, x + w / 2 - 6, ly);
-  g.fillStyle(0x3b2a1e);
-  for (const [nx, ny] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.fillCircle(x + nx * (w / 2 - 12), y + ny * (h / 2 - 12), 4);
   return g;
 }
