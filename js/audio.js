@@ -126,6 +126,18 @@ const SOUNDS = {
   groan() {
     tone(300, 0.6, { type: "sawtooth", volume: 0.04, slideTo: 120 });
   },
+  sparkle() { // a power-up turns up
+    [1047, 1319, 1568].forEach((f, i) => tone(f, 0.1, { type: "sine", volume: 0.05, delay: i * 0.06 }));
+  },
+  power() { // a power-up picked up
+    [523, 784, 1047, 1568].forEach((f, i) => tone(f, 0.12, { type: "square", volume: 0.04, delay: i * 0.07 }));
+  },
+  bark() {
+    for (const d of [0, 0.22]) {
+      noise(0.08, { volume: 0.2, filter: 900, type: "bandpass", delay: d });
+      tone(380, 0.09, { type: "sawtooth", volume: 0.06, slideTo: 220, delay: d });
+    }
+  },
 };
 
 export function play(name) {

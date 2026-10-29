@@ -1,5 +1,6 @@
 // One day on the farm. Tap a chicken and Uncle Bob walks over and feeds it; tap the wolf and he
 // runs over and punches it; tap the feed bin to refill the bucket; tap anywhere else to walk there.
+// Now and then a power-up turns up; walk over to pick it up (js/rules.js POWERS).
 // The day ends at sundown (on to the next day) or when the last heart is gone (game over).
 import * as audio from "../audio.js";
 import * as sayings from "../sayings.js";
@@ -7,9 +8,9 @@ import * as store from "../storage.js";
 import { Chicken } from "../chicken.js";
 import { Farmer } from "../farmer.js";
 import { LEVELS, paintLevel, scatterPuddles } from "../levels.js";
-import { CLOSE_CALL, EGGS_PER_BASKET, MAX_HEARTS, POINTS, START_HEARTS, dayRules, drainAt, feedPoints, sceneryIndex, sundown } from "../rules.js";
+import { CLOSE_CALL, EGGS_PER_BASKET, MAX_HEARTS, POINTS, POWERS, POWER_LIES, SNEAKER_SPEED, START_HEARTS, dayRules, drainAt, feedPoints, pickPower, powerUpsFor, sceneryIndex, sundown } from "../rules.js";
 import { Wolf } from "../wolf.js";
-import { DEPTH, H, SIZE, W, bubble, fingerAt, floatText, inside, setupCamera, text } from "../ui.js";
+import { DEPTH, H, SIZE, W, bubble, fingerAt, fit, floatText, inside, setupCamera, text } from "../ui.js";
 
 const NAMES = ["Henrietta", "Gertrude", "Nugget", "Dolly", "Peep", "Clucky", "Betty", "Drumstick", "Mabel", "Omelette", "Goldie", "Pecky", "Daisy", "Ruby", "Biscuit", "Pearl"];
 const EGG_MS = 10000;          // an egg left lying around this long is gone
@@ -59,6 +60,12 @@ export class PlayScene extends Phaser.Scene {
     this.wolves = [];
     this.eggs = [];
     this.nextWolfAt = this.rules.wolfEvery ? this.rules.firstWolf : Infinity;
+    // when today's power-ups turn up, spread over the day and never in its last few seconds
+    const powers = powerUpsFor(day);
+    this.powerAt = Array.from({ length: powers }, (_, i) => ((this.rules.dayLength - 10) * (i + Phaser.Math.FloatBetween(0.3, 0.9))) / powers);
+    this.pickup = null; // { name, sprite, x, y, until }: one lying on the farm
+    this.power = null;  // { name, left }: the one going
+    this.makePowers();
 
     this.feathers = this.add.particles(0, 0, "feather", {
       emitting: false, speed: { min: 60, max: 180 }, lifespan: 800, gravityY: 220,
@@ -125,6 +132,7 @@ export class PlayScene extends Phaser.Scene {
     const wolf = near(this.wolves.filter((w) => w.punchable), 80, 30);
     if (wolf) return this.farmer.goTo({ kind: "wolf", ref: wolf });
     // An egg wins over the chicken beside it when the tap is nearer the egg.
+    if (this.pickup && Math.hypot(this.pickup.x - p.x, this.pickup.y - 24 - p.y) < 60) return this.farmer.goTo({ kind: "power", ref: this.pickup });
     const egg = near(this.eggs, 50, 10);
     const chicken = near(this.chickens.filter((c) => c.alive), 60, 24);
     const dist = (o, lift) => Math.hypot(o.x - p.x, o.y - lift - p.y);
@@ -165,7 +173,8 @@ export class PlayScene extends Phaser.Scene {
       this.nextWolfAt = this.t + Phaser.Math.FloatBetween(lo, hi);
       const active = this.wolves.filter((w) => w.punchable).length;
       const room = this.rules.maxWolves - active;
-      if (room > 0 && this.t < this.rules.dayLength - 6) this.spawnWolves(Math.min(room, this.rules.pack));
+      const guarded = this.power?.name === "dog"; // no wolf comes near while the dog's about
+      if (room > 0 && !guarded && this.t < this.rules.dayLength - 6) this.spawnWolves(Math.min(room, this.rules.pack));
     }
     for (const w of this.wolves) w.update(dt, time, this.chickens);
     this.wolves = this.wolves.filter((w) => w.state !== "gone");
@@ -174,11 +183,18 @@ export class PlayScene extends Phaser.Scene {
     if (goal?.kind === "wolf" && !goal.ref.punchable) this.farmer.goal = null;
     if (goal?.kind === "chicken" && !goal.ref.alive) this.farmer.goal = null;
     if (goal?.kind === "egg" && !this.eggs.includes(goal.ref)) this.farmer.goal = null;
+    if (goal?.kind === "power" && goal.ref !== this.pickup) this.farmer.goal = null;
     if (goal?.kind === "chicken" && goal.ref.state === "carried") this.farmer.goTo({ kind: "wolf", ref: goal.ref.wolf });
-    const reached = this.farmer.update(dt, time, this.groundSpeed(this.farmer.x, this.farmer.y));
+    const fast = this.power?.name === "sneakers" ? SNEAKER_SPEED : 1;
+    const reached = this.farmer.update(dt, time, this.groundSpeed(this.farmer.x, this.farmer.y) * fast);
     if (reached && playing) this.arrive(reached);
 
+    if (playing && this.powerAt.length && this.t >= this.powerAt[0]) {
+      this.powerAt.shift();
+      if (!this.pickup) this.dropPowerUp(time);
+    }
     this.updateEggs(time);
+    this.updatePowers(dt, time);
     this.updateDark();
     this.updateHud();
 
@@ -204,8 +220,9 @@ export class PlayScene extends Phaser.Scene {
       floatText(this, c.x, c.y - 70, "I'M FULL!", "#ffffff", 20);
       return;
     }
-    if (this.farmer.scoops <= 0) return this.bucketEmpty();
-    this.farmer.scoops--;
+    const bottomless = this.power?.name === "bucket";
+    if (!bottomless && this.farmer.scoops <= 0) return this.bucketEmpty();
+    if (!bottomless) this.farmer.scoops--;
     const close = c.weight < CLOSE_CALL;
     const points = feedPoints(c.weight) * (c.prize ? 2 : 1);
     this.farmer.toss(c.x);
@@ -330,6 +347,125 @@ export class PlayScene extends Phaser.Scene {
     });
   }
 
+  // ---- power-ups --------------------------------------------------------------------------------
+
+  // What each power-up looks like on Uncle Bob: sneakers on his feet, the guard dog, corn spilling
+  // from the bottomless bucket. And its icon and time bar in the score bar.
+  makePowers() {
+    this.feet = [-1, 1].map(() => fit(this.add.image(0, 0, "sneaker").setOrigin(0.5, 0.9), 16).setVisible(false));
+    this.dog = fit(this.add.image(-100, 600, "dog").setOrigin(0.5, 0.95), 58).setVisible(false);
+    this.dogAngle = 0;
+    this.spill = this.add.particles(0, 0, "corn", {
+      emitting: false, speedX: { min: -50, max: 50 }, speedY: { min: -120, max: -40 }, gravityY: 400,
+      lifespan: 600, frequency: 60, scale: { min: 0.8, max: 1.2 },
+    }).setDepth(DEPTH.effects);
+  }
+
+  // One turns up somewhere on the farm, well away from Uncle Bob, so getting it is a gamble.
+  dropPowerUp(now) {
+    let x;
+    let y;
+    for (let i = 0; i < 30; i++) {
+      x = Phaser.Math.Between(60, W - 60);
+      y = Phaser.Math.Between(400, 880);
+      const farFromBob = Math.hypot(x - this.farmer.x, y - this.farmer.y) > 170;
+      const clearOfBin = Math.hypot(x - this.level.bin.x, y - this.level.bin.y) > 90;
+      if (farFromBob && clearOfBin) break;
+    }
+    const name = pickPower(this.power?.name, Math.random());
+    const sprite = fit(this.add.image(x, y, `power-${name}`).setOrigin(0.5, 0.9), 54).setDepth(DEPTH.onGround + y / 10);
+    const scale = sprite.scale;
+    sprite.setScale(0);
+    this.tweens.add({ targets: sprite, scale, duration: 350, ease: "Back.easeOut" });
+    this.tweens.add({ targets: sprite, y: y - 8, duration: 450, yoyo: true, repeat: -1, ease: "Sine.easeInOut", delay: 350 });
+    const glow = this.add.image(x, y - 24, "ring").setDepth(DEPTH.onGround + y / 10 - 0.01).setTint(0xffe066);
+    this.tweens.add({ targets: glow, scale: { from: 0.6, to: 1.3 }, alpha: { from: 0.9, to: 0 }, duration: 900, repeat: -1 });
+    this.pickup = { name, sprite, glow, x, y, until: now + POWER_LIES * 1000 };
+    audio.play("sparkle");
+  }
+
+  dropPickup() {
+    if (!this.pickup) return;
+    this.pickup.sprite.destroy();
+    this.pickup.glow.destroy();
+    this.pickup = null;
+  }
+
+  // Picked up: whatever was going ends, and this one starts.
+  collectPower(name) {
+    this.dropPickup();
+    this.endPower();
+    audio.play("power");
+    floatText(this, Phaser.Math.Clamp(this.farmer.x, 130, W - 130), this.farmer.y - 150, POWERS[name].says, "#ffb347", 32);
+    if (POWERS[name].seconds > 0) this.power = { name, left: POWERS[name].seconds };
+    if (name === "superfeed") {
+      // corn rains on every chicken and they're all fed full
+      for (const c of this.chickens.filter((c) => c.state === "ok")) {
+        c.feed();
+        for (let i = 0; i < 6; i++) {
+          const k = this.add.image(c.x + Phaser.Math.Between(-24, 24), c.y - 120, "corn").setDepth(DEPTH.effects);
+          this.tweens.add({ targets: k, y: c.y + Phaser.Math.Between(-6, 8), duration: 300 + i * 40, ease: "Quad.easeIn", onComplete: () => k.destroy() });
+        }
+      }
+    } else if (name === "bucket") {
+      this.farmer.scoops = this.rules.bucket;
+      this.binArrow.setVisible(false);
+    } else if (name === "dog") {
+      for (const w of this.wolves) w.runOff();
+      this.dog.setPosition(this.farmer.x < W / 2 ? W + 60 : -60, this.farmer.y).setVisible(true);
+      audio.play("bark");
+    }
+  }
+
+  endPower() {
+    if (this.power?.name === "dog") {
+      // off home again
+      const away = this.dog.x < W / 2 ? -80 : W + 80;
+      this.dog.setFlipX(away < this.dog.x);
+      this.tweens.add({ targets: this.dog, x: away, duration: 700, onComplete: () => this.dog.setVisible(false) });
+    }
+    this.power = null;
+    this.feet.forEach((f) => f.setVisible(false));
+    this.spill.stop();
+  }
+
+  updatePowers(dt, now) {
+    const p = this.pickup;
+    if (p) {
+      if (this.phase === "play" && Math.hypot(p.x - this.farmer.x, p.y - this.farmer.y) < EGG_PICKUP) this.collectPower(p.name);
+      else if (now > p.until) this.dropPickup();
+      else if (now > p.until - 2500) p.sprite.setVisible(Math.floor(now / 150) % 2 === 0);
+    }
+    if (!this.power) return;
+    if (this.phase === "play") this.power.left -= dt;
+    if (this.power.left <= 0) return this.endPower();
+    // blinking in the last two seconds, so you can see it running out
+    const showing = !(this.power.left < 2 && Math.floor(this.power.left * 6) % 2 === 0);
+    const { name } = this.power;
+    const bob = this.farmer;
+    const left = bob.sprite.flipX;
+    this.feet.forEach((foot, i) => {
+      const step = Math.max(0, Math.sin(bob.walked / 10 + i * Math.PI)) * 5;
+      foot.setPosition(bob.x + (i ? 9 : -9), bob.y - step).setFlipX(left).setDepth(bob.sprite.depth + 0.01).setVisible(name === "sneakers" && showing);
+    });
+    if (name === "bucket") {
+      this.spill.setPosition(bob.x + (left ? -22 : 22), bob.y - 46);
+      if (!this.spill.emitting) this.spill.start();
+    }
+    if (name === "dog") {
+      // the dog trots round and round Uncle Bob, keeping watch
+      this.dogAngle += dt * 2.2;
+      const tx = Phaser.Math.Clamp(bob.x + Math.cos(this.dogAngle) * 90, 30, W - 30);
+      const ty = Phaser.Math.Clamp(bob.y + Math.sin(this.dogAngle) * 40, 340, 930);
+      const dx = tx - this.dog.x;
+      const step = Math.min(1, dt * 6);
+      this.dog.x += dx * step;
+      this.dog.y += (ty - this.dog.y) * step;
+      if (Math.abs(dx) > 1) this.dog.setFlipX(dx < 0);
+      this.dog.setDepth(DEPTH.onGround + this.dog.y / 10).setAlpha(showing ? 1 : 0.4);
+    }
+  }
+
   // Called by a chicken that starved or was carried off.
   onChickenLost(chicken, how) {
     if (this.phase !== "play") return;
@@ -374,6 +510,8 @@ export class PlayScene extends Phaser.Scene {
 
   endDay() {
     this.phase = "sundown";
+    this.endPower();
+    this.dropPickup();
     this.farmer.goal = null;
     this.binArrow.setVisible(false);
     for (const w of this.wolves) w.runOff();
@@ -398,6 +536,8 @@ export class PlayScene extends Phaser.Scene {
 
   gameOver() {
     this.phase = "gameover";
+    this.endPower();
+    this.dropPickup();
     this.farmer.goal = null;
     this.binArrow.setVisible(false);
     for (const w of this.wolves) w.runOff();
@@ -536,6 +676,10 @@ export class PlayScene extends Phaser.Scene {
     this.basketIcon = this.add.image(W - 96, 74, "egg").setDepth(d);
     this.basketText = text(this, W - 82, 76, "", 18, { originX: 0, color: "#fff3c4", strokeThickness: 4 }).setDepth(d);
     this.pips = this.add.graphics().setDepth(d);
+    // the power-up going, with a bar of the time it has left
+    this.powerIcon = this.add.image(394, 66, "power-sneakers").setDepth(d).setVisible(false);
+    this.powerIconOf = null;
+    this.powerBar = this.add.graphics().setDepth(d);
     this.shown = {};
   }
 
@@ -557,6 +701,14 @@ export class PlayScene extends Phaser.Scene {
       }
     }
     if (this.shown.basket !== this.stats.basket) this.basketText.setText(`${this.stats.basket || 0}/${EGGS_PER_BASKET}`);
+    this.powerBar.clear();
+    const p = this.power;
+    this.powerIcon.setVisible(Boolean(p));
+    if (p) {
+      if (this.powerIconOf !== p.name) fit(this.powerIcon.setTexture(`power-${(this.powerIconOf = p.name)}`), 30);
+      this.powerBar.fillStyle(0x000000, 0.4).fillRoundedRect(370, 84, 48, 7, 3);
+      this.powerBar.fillStyle(0xffa53a).fillRoundedRect(370, 84, 48 * Math.max(0, p.left / POWERS[p.name].seconds), 7, 3);
+    }
     this.shown = { score: this.score, hearts: this.hearts, scoops: this.farmer.scoops, basket: this.stats.basket };
   }
 

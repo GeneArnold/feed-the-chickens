@@ -14,6 +14,9 @@ export const SPRITES = {
   "wolf": "wolf-sneak", "wolf-run": "wolf-run", "wolf-dizzy": "wolf-dizzy",
   "mud-1": "mud-1", "mud-2": "mud-2", "water": "water",
   "pumpkins-1": "pumpkins-1", "pumpkins-2": "pumpkins-2", "chick": "chick", "ribbon": "ribbon",
+  // the power-ups, as they lie on the farm (and in the score bar), and what they put on Uncle Bob
+  "power-superfeed": "feedsack", "power-sneakers": "sneakers", "power-dog": "dog", "power-bucket": "magicbucket",
+  "dog": "dog", "sneaker": "sneaker",
 };
 
 export class BootScene extends Phaser.Scene {

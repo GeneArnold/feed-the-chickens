@@ -88,3 +88,35 @@ export function sundown(alive, lostToday) {
   const perfect = alive > 0 && lostToday === 0;
   return { points: alive * POINTS.saved + (perfect ? POINTS.perfect : 0), perfect };
 }
+
+// Power-ups: now and then one lies on the farm for a few seconds, and Uncle Bob has to walk over
+// and pick it up. One at a time: picking one up ends the one going. None on day 1; more turn up on
+// the harder days. All of them end at sundown.
+//   seconds  how long it lasts (0: it happens at once)
+//   weight   how likely it is to be the one that turns up
+//   says     what pops up when he picks it up
+export const POWERS = {
+  superfeed: { seconds: 0, weight: 1, says: "SUPER FEED!" },        // every chicken fed full
+  sneakers: { seconds: 8, weight: 3, says: "SPEEDY SNEAKERS!" },    // Uncle Bob runs faster
+  dog: { seconds: 10, weight: 2, says: "GUARD DOG!" },              // wolves run off and stay away
+  bucket: { seconds: 8, weight: 2, says: "BOTTOMLESS BUCKET!" },    // a full bucket that never runs out
+};
+export const SNEAKER_SPEED = 1.6; // how much faster Uncle Bob goes in sneakers
+export const POWER_LIES = 9;      // seconds a power-up lies on the farm before it's gone
+
+// How many power-ups turn up on a day.
+export function powerUpsFor(day) {
+  return day < 2 ? 0 : day < 4 ? 1 : day < 6 ? 2 : day < 8 ? 3 : 4;
+}
+
+// Which power-up turns up: by weight, never the one already going. `roll` is 0..1.
+export function pickPower(active, roll) {
+  const names = Object.keys(POWERS).filter((n) => n !== active);
+  const total = names.reduce((s, n) => s + POWERS[n].weight, 0);
+  let r = roll * total;
+  for (const n of names) {
+    r -= POWERS[n].weight;
+    if (r < 0) return n;
+  }
+  return names.at(-1);
+}

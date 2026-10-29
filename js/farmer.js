@@ -6,7 +6,7 @@ export const SPEED = 250; // pixels per second on dry grass
 const BOUNDS = { x1: 24, x2: W - 24, y1: 330, y2: 930 };
 
 // How close he has to get to do something, by what he was sent to.
-export const REACH = { chicken: 46, wolf: 58, bin: 52, egg: 12, ground: 3 };
+export const REACH = { chicken: 46, wolf: 58, bin: 52, egg: 12, power: 12, ground: 3 };
 
 export class Farmer {
   constructor(scene, x, y, scoops) {

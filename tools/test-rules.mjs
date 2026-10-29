@@ -1,6 +1,6 @@
 // Checks the difficulty climbs and the scoring adds up. Run:  node tools/test-rules.mjs
 import assert from "node:assert/strict";
-import { DAYS, dayRules, drainAt, feedPoints, sceneryIndex, sundown } from "../js/rules.js";
+import { DAYS, POWERS, dayRules, drainAt, feedPoints, pickPower, powerUpsFor, sceneryIndex, sundown } from "../js/rules.js";
 
 let prev = null;
 for (let day = 1; day <= 30; day++) {
@@ -53,4 +53,10 @@ for (let day = 7; day <= 30; day++) {
   assert.ok(b.chickens - a.chickens <= 1 && b.maxWolves - a.maxWolves <= 1, `day ${day}: too big a jump`);
   assert.ok(b.drain <= a.drain * 1.1, `day ${day}: too much hungrier`);
 }
+// Power-ups: none on day 1, more on the harder days; never the one already going; all can turn up.
+assert.equal(powerUpsFor(1), 0);
+for (let day = 2; day < 30; day++) assert.ok(powerUpsFor(day + 1) >= powerUpsFor(day), `day ${day}: fewer power-ups`);
+assert.ok(powerUpsFor(8) >= 2, "help on the hard days");
+for (let r = 0; r < 1; r += 0.01) assert.notEqual(pickPower("dog", r), "dog");
+assert.deepEqual(new Set(Array.from({ length: 100 }, (_, i) => pickPower(null, i / 100))), new Set(Object.keys(POWERS)));
 console.log("rules ok");

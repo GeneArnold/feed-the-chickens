@@ -28,6 +28,14 @@ On localhost and plain http the offline cache is switched off, so edits show up 
   letter to pick it, then DONE (swiping works too).
 - **Title:** Uncle Bob says "Hey, let's go feed those chickens!" Big PLAY and HIGH SCORES buttons (or swipe up
   and down). Tap your initials to change them.
+- **Power-ups** turn up now and then (none on day 1, then 1 a day, up to 4 a day from day 8). Each lies
+  on the farm for a few seconds; tap it and Uncle Bob walks over to pick it up. One at a time, with
+  its icon and a timer bar in the score bar:
+  - **Super Feed** (golden feed sack): every chicken fed full at once.
+  - **Speedy Sneakers**: Uncle Bob runs faster for 8 seconds.
+  - **Guard Dog**: the wolves run off and none come for 10 seconds.
+  - **Bottomless Bucket**: a full bucket that never runs out for 8 seconds.
+  The numbers are `POWERS` and `powerUpsFor()` in `js/rules.js`.
 - **Each day** opens with a card: the day, the scenery, what's in store, and a line from Uncle Bob.
   It starts the day by itself after a few seconds (longer on day 1); TAP TO FEED skips the wait.
 - **On the farm**, drag your finger and Uncle Bob just walks along under it. Tap and he walks over
